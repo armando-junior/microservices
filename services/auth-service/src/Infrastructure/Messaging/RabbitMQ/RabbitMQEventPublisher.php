@@ -68,7 +68,7 @@ final class RabbitMQEventPublisher implements EventPublisherInterface
                 $event->toJson(),
                 [
                     'content_type' => 'application/json',
-                    'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
+                    'delivery_mode' => 2, // 2 = persistent
                     'timestamp' => $event->occurredOn()->getTimestamp(),
                 ]
             );

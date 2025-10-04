@@ -39,7 +39,7 @@ class UpdateUserRequest extends FormRequest
                 'sometimes',
                 'required',
                 'string',
-                'email:rfc,dns',
+                'email:rfc',
                 'max:255',
                 'unique:users,email,' . $userId . ',id',
             ],
