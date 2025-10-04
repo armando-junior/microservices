@@ -1,0 +1,89 @@
+# Prometheus Configuration
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'microservices-erp'
+    environment: 'development'
+
+# Alerting configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+# Load rules once and periodically evaluate them
+rule_files:
+  # - "alerts/*.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # RabbitMQ
+  - job_name: 'rabbitmq'
+    static_configs:
+      - targets: ['rabbitmq:15692']
+    metrics_path: '/metrics'
+
+  # Redis (requires redis_exporter)
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']
+
+  # PostgreSQL (requires postgres_exporter)
+  # - job_name: 'postgres'
+  #   static_configs:
+  #     - targets: ['postgres-exporter:9187']
+
+  # Kong API Gateway
+  - job_name: 'kong'
+    static_configs:
+      - targets: ['api-gateway:8001']
+    metrics_path: '/metrics'
+
+  # Auth Service (when implemented)
+  - job_name: 'auth-service'
+    static_configs:
+      - targets: ['auth-service:9091']
+    metrics_path: '/metrics'
+
+  # Inventory Service (when implemented)
+  - job_name: 'inventory-service'
+    static_configs:
+      - targets: ['inventory-service:9091']
+    metrics_path: '/metrics'
+
+  # Sales Service (when implemented)
+  - job_name: 'sales-service'
+    static_configs:
+      - targets: ['sales-service:9091']
+    metrics_path: '/metrics'
+
+  # Logistics Service (when implemented)
+  - job_name: 'logistics-service'
+    static_configs:
+      - targets: ['logistics-service:9091']
+    metrics_path: '/metrics'
+
+  # Financial Service (when implemented)
+  - job_name: 'financial-service'
+    static_configs:
+      - targets: ['financial-service:9091']
+    metrics_path: '/metrics'
+
+  # Notification Service (when implemented)
+  - job_name: 'notification-service'
+    static_configs:
+      - targets: ['notification-service:9091']
+    metrics_path: '/metrics'
+
+  # Node Exporter (system metrics - optional)
+  # - job_name: 'node'
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']
+

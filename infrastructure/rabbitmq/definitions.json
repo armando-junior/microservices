@@ -1,0 +1,325 @@
+{
+  "rabbit_version": "3.13.0",
+  "rabbitmq_version": "3.13.0",
+  "users": [
+    {
+      "name": "admin",
+      "password_hash": "JLy8OxwXVlPQBgbHjNz0zIGUWzoOLTD3L2qwPLVqCzKhOBqL",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": ["administrator"]
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "/"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "admin",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "auth.events",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "inventory.events",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "sales.events",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "logistics.events",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "financial.events",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "dlx",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "auth.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "dlx",
+        "x-dead-letter-routing-key": "auth.dlq"
+      }
+    },
+    {
+      "name": "inventory.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "dlx",
+        "x-dead-letter-routing-key": "inventory.dlq"
+      }
+    },
+    {
+      "name": "sales.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "dlx",
+        "x-dead-letter-routing-key": "sales.dlq"
+      }
+    },
+    {
+      "name": "logistics.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "dlx",
+        "x-dead-letter-routing-key": "logistics.dlq"
+      }
+    },
+    {
+      "name": "financial.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "dlx",
+        "x-dead-letter-routing-key": "financial.dlq"
+      }
+    },
+    {
+      "name": "notification.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "dlx",
+        "x-dead-letter-routing-key": "notification.dlq"
+      }
+    },
+    {
+      "name": "auth.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "inventory.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "sales.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "logistics.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "financial.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "notification.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "sales.events",
+      "vhost": "/",
+      "destination": "inventory.queue",
+      "destination_type": "queue",
+      "routing_key": "sales.order.*",
+      "arguments": {}
+    },
+    {
+      "source": "inventory.events",
+      "vhost": "/",
+      "destination": "sales.queue",
+      "destination_type": "queue",
+      "routing_key": "inventory.stock.*",
+      "arguments": {}
+    },
+    {
+      "source": "financial.events",
+      "vhost": "/",
+      "destination": "sales.queue",
+      "destination_type": "queue",
+      "routing_key": "financial.payment.*",
+      "arguments": {}
+    },
+    {
+      "source": "sales.events",
+      "vhost": "/",
+      "destination": "financial.queue",
+      "destination_type": "queue",
+      "routing_key": "sales.order.created",
+      "arguments": {}
+    },
+    {
+      "source": "sales.events",
+      "vhost": "/",
+      "destination": "logistics.queue",
+      "destination_type": "queue",
+      "routing_key": "sales.order.confirmed",
+      "arguments": {}
+    },
+    {
+      "source": "logistics.events",
+      "vhost": "/",
+      "destination": "sales.queue",
+      "destination_type": "queue",
+      "routing_key": "logistics.shipment.delivered",
+      "arguments": {}
+    },
+    {
+      "source": "logistics.events",
+      "vhost": "/",
+      "destination": "financial.queue",
+      "destination_type": "queue",
+      "routing_key": "logistics.shipment.dispatched",
+      "arguments": {}
+    },
+    {
+      "source": "auth.events",
+      "vhost": "/",
+      "destination": "notification.queue",
+      "destination_type": "queue",
+      "routing_key": "auth.user.registered",
+      "arguments": {}
+    },
+    {
+      "source": "sales.events",
+      "vhost": "/",
+      "destination": "notification.queue",
+      "destination_type": "queue",
+      "routing_key": "sales.order.*",
+      "arguments": {}
+    },
+    {
+      "source": "logistics.events",
+      "vhost": "/",
+      "destination": "notification.queue",
+      "destination_type": "queue",
+      "routing_key": "logistics.shipment.*",
+      "arguments": {}
+    },
+    {
+      "source": "financial.events",
+      "vhost": "/",
+      "destination": "notification.queue",
+      "destination_type": "queue",
+      "routing_key": "financial.payment.*",
+      "arguments": {}
+    },
+    {
+      "source": "dlx",
+      "vhost": "/",
+      "destination": "auth.dlq",
+      "destination_type": "queue",
+      "routing_key": "auth.dlq",
+      "arguments": {}
+    },
+    {
+      "source": "dlx",
+      "vhost": "/",
+      "destination": "inventory.dlq",
+      "destination_type": "queue",
+      "routing_key": "inventory.dlq",
+      "arguments": {}
+    },
+    {
+      "source": "dlx",
+      "vhost": "/",
+      "destination": "sales.dlq",
+      "destination_type": "queue",
+      "routing_key": "sales.dlq",
+      "arguments": {}
+    },
+    {
+      "source": "dlx",
+      "vhost": "/",
+      "destination": "logistics.dlq",
+      "destination_type": "queue",
+      "routing_key": "logistics.dlq",
+      "arguments": {}
+    },
+    {
+      "source": "dlx",
+      "vhost": "/",
+      "destination": "financial.dlq",
+      "destination_type": "queue",
+      "routing_key": "financial.dlq",
+      "arguments": {}
+    },
+    {
+      "source": "dlx",
+      "vhost": "/",
+      "destination": "notification.dlq",
+      "destination_type": "queue",
+      "routing_key": "notification.dlq",
+      "arguments": {}
+    }
+  ]
+}
+
