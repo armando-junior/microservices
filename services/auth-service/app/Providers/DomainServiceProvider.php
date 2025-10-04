@@ -35,7 +35,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->singleton(EventPublisherInterface::class, function ($app) {
             return new RabbitMQEventPublisher(
                 host: config('rabbitmq.host'),
-                port: config('rabbitmq.port'),
+                port: (int) config('rabbitmq.port'),
                 user: config('rabbitmq.user'),
                 password: config('rabbitmq.password'),
                 vhost: config('rabbitmq.vhost'),
@@ -47,7 +47,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->singleton(TokenGeneratorInterface::class, function ($app) {
             return new JWTTokenGenerator(
                 secret: config('jwt.secret'),
-                ttl: config('jwt.ttl'),
+                ttl: (int) config('jwt.ttl'),
                 issuer: config('jwt.issuer')
             );
         });
