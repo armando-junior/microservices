@@ -232,6 +232,75 @@ services:
       retries: 5
 
   # ==========================================
+  # MICROSERVICES
+  # ==========================================
+  
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    environment:
+      APP_NAME: "Auth Service"
+      APP_ENV: production
+      APP_KEY: base64:J85BSo5qgM8JEdEXBjyWIHjeHvBLNNIPYsgJp0Ud9NE=
+      APP_DEBUG: "false"
+      APP_URL: http://auth-service:8000
+      
+      # Database
+      DB_CONNECTION: pgsql
+      DB_HOST: auth-db
+      DB_PORT: 5432
+      DB_DATABASE: auth_db
+      DB_USERNAME: auth_user
+      DB_PASSWORD: auth_pass
+      
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PASSWORD: redis_password
+      REDIS_PORT: 6379
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      
+      # RabbitMQ
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: admin
+      RABBITMQ_PASSWORD: admin123
+      RABBITMQ_VHOST: /
+      
+      # JWT
+      JWT_SECRET: please-change-this-secret-key-in-production-use-openssl-rand-base64-32
+      JWT_TTL: 3600
+      JWT_ALGO: HS256
+      JWT_ISSUER: auth-service
+      
+      # Logging
+      LOG_CHANNEL: stack
+      LOG_LEVEL: info
+    ports:
+      - "9001:8000"
+    volumes:
+      - ./services/auth-service/storage:/var/www/storage
+      - ./services/auth-service/bootstrap/cache:/var/www/bootstrap/cache
+    networks:
+      - microservices-net
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  # ==========================================
   # MONITORING - Prometheus
   # ==========================================
   

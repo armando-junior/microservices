@@ -118,6 +118,13 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'rabbitmq' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/rabbitmq.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+        ],
+
         'null' => [
             'driver' => 'monolog',
             'handler' => NullHandler::class,

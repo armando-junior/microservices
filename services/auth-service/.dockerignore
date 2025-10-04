@@ -1,0 +1,83 @@
+# ==============================================================================
+# Auth Service - .dockerignore
+# Files and directories to exclude from Docker build context
+# ==============================================================================
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+ARCHITECTURE.md
+API-DOCS.md
+*.md
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*.swn
+*.sublime-*
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Dependencies (will be installed during build)
+vendor/
+node_modules/
+
+# Laravel
+.env
+.env.*
+!.env.example
+.phpunit.result.cache
+storage/logs/*.log
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/testing/*
+storage/framework/views/*
+bootstrap/cache/*
+!storage/framework/cache/data/.gitignore
+!storage/framework/sessions/.gitignore
+!storage/framework/testing/.gitignore
+!storage/framework/views/.gitignore
+!bootstrap/cache/.gitignore
+
+# Testing
+tests/
+phpunit.xml
+.phpunit.result.cache
+coverage/
+
+# Database
+database/*.sqlite
+database/*.sqlite-journal
+
+# Docker
+Dockerfile.old
+Dockerfile.dev.old
+Dockerfile.migrate
+docker-compose*.yml
+
+# Build artifacts
+*.log
+*.cache
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Package files
+package.json
+package-lock.json
+vite.config.js
+
+# Postman
+postman-collection.json
+

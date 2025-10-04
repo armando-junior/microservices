@@ -42,7 +42,7 @@ class JwtAuthMiddleware
             // Decodificar e validar o token
             $decoded = JWT::decode(
                 $token,
-                new Key(config('jwt.secret'), config('jwt.algo'))
+                new Key(config('jwt.secret'), config('jwt.algo', 'HS256'))
             );
 
             // Adicionar dados do usuário ao request
@@ -82,7 +82,7 @@ class JwtAuthMiddleware
         try {
             $decoded = JWT::decode(
                 $token,
-                new Key(config('jwt.secret'), config('jwt.algo'))
+                new Key(config('jwt.secret'), config('jwt.algo', 'HS256'))
             );
 
             $jti = $decoded->jti ?? null;

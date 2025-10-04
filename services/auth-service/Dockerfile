@@ -1,69 +1,98 @@
-# Auth Service - Dockerfile
-FROM php:8.3-fpm-alpine
+# ==============================================================================
+# Auth Service - Production Dockerfile
+# Multi-stage build for optimized image size
+# ==============================================================================
 
-# Metadata
-LABEL maintainer="auth-service"
-LABEL description="Authentication Microservice with Laravel"
+# Stage 1: Composer Dependencies
+FROM composer:2.7 AS composer-stage
 
-# Install system dependencies
-RUN apk add --no-cache \
-    git \
-    curl \
-    libpng-dev \
-    libzip-dev \
-    zip \
-    unzip \
-    postgresql-dev \
-    bash \
-    supervisor \
-    nginx
+WORKDIR /app
 
-# Install PHP extensions
-RUN docker-php-ext-install \
-    pdo \
-    pdo_pgsql \
-    pgsql \
-    zip \
-    bcmath \
-    pcntl
+# Copy composer files
+COPY composer.json composer.lock ./
 
-# Install Redis extension
-RUN apk add --no-cache pcre-dev $PHPIZE_DEPS \
-    && pecl install redis \
-    && docker-php-ext-enable redis
-
-# Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
-# Set working directory
-WORKDIR /var/www/auth-service
-
-# Copy composer files first for better caching
-COPY composer.json composer.lock* ./
-
-# Install PHP dependencies (if composer files exist)
-RUN if [ -f composer.json ]; then composer install --no-scripts --no-autoloader; fi
+# Install dependencies (no dev)
+RUN composer install \
+    --no-dev \
+    --no-scripts \
+    --no-autoloader \
+    --prefer-dist \
+    --optimize-autoloader
 
 # Copy application code
 COPY . .
 
-# Generate autoload files
-RUN if [ -f composer.json ]; then composer dump-autoload --optimize; fi
+# Generate optimized autoload files
+RUN composer dump-autoload --optimize --classmap-authoritative
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www/auth-service \
-    && chmod -R 755 /var/www/auth-service/storage \
-    && chmod -R 755 /var/www/auth-service/bootstrap/cache
+# ==============================================================================
+# Stage 2: Production Image
+FROM php:8.3-fpm-alpine
 
-# Copy Nginx configuration
-COPY docker/nginx.conf /etc/nginx/nginx.conf
+# Metadata
+LABEL maintainer="auth-service" \
+      description="Authentication Microservice with Laravel" \
+      version="1.0.0"
 
-# Copy Supervisor configuration
-COPY docker/supervisord.conf /etc/supervisord.conf
+# Set working directory
+WORKDIR /var/www
+
+# Install system dependencies
+RUN apk add --no-cache \
+    nginx \
+    supervisor \
+    postgresql-dev \
+    bash \
+    curl \
+    && rm -rf /var/cache/apk/*
+
+# Install PHP extensions
+RUN docker-php-ext-install -j$(nproc) \
+    pdo_pgsql \
+    pgsql \
+    bcmath \
+    pcntl
+
+# Install Redis extension
+RUN apk add --no-cache --virtual .build-deps \
+    $PHPIZE_DEPS \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apk del .build-deps \
+    && rm -rf /tmp/pear
+
+# Configure PHP
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
+    && echo "memory_limit = 256M" >> "$PHP_INI_DIR/conf.d/custom.ini" \
+    && echo "post_max_size = 50M" >> "$PHP_INI_DIR/conf.d/custom.ini" \
+    && echo "upload_max_filesize = 50M" >> "$PHP_INI_DIR/conf.d/custom.ini" \
+    && echo "max_execution_time = 300" >> "$PHP_INI_DIR/conf.d/custom.ini"
+
+# Copy application from composer stage
+COPY --from=composer-stage --chown=www-data:www-data /app /var/www
+
+# Copy Docker configuration files
+COPY --chown=www-data:www-data docker/nginx.conf /etc/nginx/nginx.conf
+COPY --chown=www-data:www-data docker/php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
+COPY --chown=www-data:www-data docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Create required directories and set permissions
+RUN mkdir -p \
+    /var/www/storage/framework/cache/data \
+    /var/www/storage/framework/sessions \
+    /var/www/storage/framework/views \
+    /var/www/storage/logs \
+    /var/www/bootstrap/cache \
+    /run/nginx \
+    && chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
+    && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/api/health || exit 1
 
 # Expose port
 EXPOSE 8000
 
-# Start Supervisor (manages PHP-FPM and Nginx)
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
-
+# Start supervisor (runs as root, manages www-data processes)
+CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

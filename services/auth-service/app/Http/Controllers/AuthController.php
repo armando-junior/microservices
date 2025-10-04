@@ -10,6 +10,7 @@ use App\Http\Resources\AuthTokenResource;
 use App\Http\Resources\UserResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Src\Application\DTOs\LoginUserDTO;
 use Src\Application\DTOs\RegisterUserDTO;
 use Src\Application\Exceptions\ApplicationException;
@@ -38,38 +39,43 @@ class AuthController extends Controller
     public function register(RegisterRequest $request): JsonResponse
     {
         try {
+            \Log::info('Registration attempt started', ['email' => $request->input('email')]);
+            
             $dto = new RegisterUserDTO(
                 name: $request->input('name'),
                 email: $request->input('email'),
                 password: $request->input('password')
             );
+            
+            \Log::info('DTO created successfully');
 
-            $result = $this->registerUserUseCase->execute($dto);
+            $authTokenDTO = $this->registerUserUseCase->execute($dto);
+            
+            \Log::info('Use case executed successfully', ['user_id' => $authTokenDTO->user->id]);
 
-            return response()->json([
-                'message' => 'User registered successfully',
-                'user' => new UserResource($this->getUserModel($result->userId)),
-                'auth' => new AuthTokenResource($result->authToken),
-            ], 201);
+            return (new AuthTokenResource($authTokenDTO))
+                ->response()
+                ->setStatusCode(Response::HTTP_CREATED);
 
         } catch (EmailAlreadyExistsException $e) {
+            \Log::warning('Registration failed: Email already exists', ['email' => $request->input('email')]);
             return response()->json([
                 'error' => 'Email already exists',
                 'message' => $e->getMessage(),
             ], 409);
 
         } catch (ApplicationException $e) {
+            \Log::error('Registration failed: Application exception', [
+                'exception' => get_class($e),
+                'message' => $e->getMessage()
+            ]);
             return response()->json([
                 'error' => 'Registration failed',
                 'message' => $e->getMessage(),
             ], 400);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Internal server error',
-                'message' => 'An unexpected error occurred',
-            ], 500);
         }
+        
+        // Let other exceptions propagate to the global exception handler
     }
 
     /**
@@ -78,43 +84,49 @@ class AuthController extends Controller
     public function login(LoginRequest $request): JsonResponse
     {
         try {
+            \Log::info('Login attempt started', ['email' => $request->input('email')]);
+            
             $dto = new LoginUserDTO(
                 email: $request->input('email'),
                 password: $request->input('password')
             );
+            
+            \Log::info('DTO created successfully');
 
-            $result = $this->loginUserUseCase->execute($dto);
+            $authTokenDTO = $this->loginUserUseCase->execute($dto);
+            
+            \Log::info('Use case executed successfully', ['user_id' => $authTokenDTO->user->id]);
 
-            return response()->json([
-                'message' => 'Login successful',
-                'user' => new UserResource($this->getUserModel($result->userId)),
-                'auth' => new AuthTokenResource($result->authToken),
-            ], 200);
+            return (new AuthTokenResource($authTokenDTO))
+                ->response()
+                ->setStatusCode(Response::HTTP_OK);
 
         } catch (InvalidCredentialsException $e) {
+            \Log::warning('Login failed: Invalid credentials', ['email' => $request->input('email')]);
             return response()->json([
                 'error' => 'Invalid credentials',
                 'message' => $e->getMessage(),
             ], 401);
 
         } catch (UserNotFoundException $e) {
+            \Log::warning('Login failed: User not found', ['email' => $request->input('email')]);
             return response()->json([
                 'error' => 'User not found',
                 'message' => $e->getMessage(),
             ], 404);
 
         } catch (ApplicationException $e) {
+            \Log::error('Login failed: Application exception', [
+                'exception' => get_class($e),
+                'message' => $e->getMessage()
+            ]);
             return response()->json([
                 'error' => 'Login failed',
                 'message' => $e->getMessage(),
             ], 400);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Internal server error',
-                'message' => 'An unexpected error occurred',
-            ], 500);
         }
+        
+        // Let other exceptions propagate to the global exception handler
     }
 
     /**

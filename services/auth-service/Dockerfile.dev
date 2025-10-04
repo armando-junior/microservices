@@ -1,38 +1,66 @@
+# ==============================================================================
 # Auth Service - Development Dockerfile
-FROM php:8.3-fpm-alpine
+# Simplified for development with hot-reload support
+# ==============================================================================
+
+FROM php:8.3-cli-alpine
+
+# Metadata
+LABEL maintainer="auth-service" \
+      description="Authentication Microservice - Development" \
+      version="1.0.0-dev"
+
+# Set working directory
+WORKDIR /var/www
 
 # Install system dependencies
 RUN apk add --no-cache \
     git \
     curl \
-    libzip-dev \
-    zip \
-    unzip \
     postgresql-dev \
-    bash
+    bash \
+    vim \
+    && rm -rf /var/cache/apk/*
 
 # Install PHP extensions
-RUN docker-php-ext-install \
-    pdo \
+RUN docker-php-ext-install -j$(nproc) \
     pdo_pgsql \
     pgsql \
-    zip \
-    bcmath
+    bcmath \
+    pcntl
 
 # Install Redis extension
-RUN apk add --no-cache pcre-dev $PHPIZE_DEPS \
+RUN apk add --no-cache --virtual .build-deps \
+    $PHPIZE_DEPS \
     && pecl install redis \
-    && docker-php-ext-enable redis
+    && docker-php-ext-enable redis \
+    && apk del .build-deps \
+    && rm -rf /tmp/pear
+
+# Install Xdebug for debugging
+RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS linux-headers \
+    && pecl install xdebug \
+    && docker-php-ext-enable xdebug \
+    && apk del .build-deps \
+    && rm -rf /tmp/pear
+
+# Configure PHP for development
+RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" \
+    && echo "xdebug.mode=debug" >> "$PHP_INI_DIR/conf.d/xdebug.ini" \
+    && echo "xdebug.start_with_request=yes" >> "$PHP_INI_DIR/conf.d/xdebug.ini" \
+    && echo "xdebug.client_host=host.docker.internal" >> "$PHP_INI_DIR/conf.d/xdebug.ini" \
+    && echo "xdebug.client_port=9003" >> "$PHP_INI_DIR/conf.d/xdebug.ini" \
+    && echo "memory_limit = 512M" >> "$PHP_INI_DIR/conf.d/custom.ini"
 
 # Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2.7 /usr/bin/composer /usr/bin/composer
 
-# Set working directory
-WORKDIR /var/www
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/api/health || exit 1
 
 # Expose port
 EXPOSE 8000
 
-# Start PHP built-in server (for development)
+# Start Laravel development server
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
-

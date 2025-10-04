@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Src\Application\UseCases\RegisterUser;
 
 use Src\Application\Contracts\EventPublisherInterface;
+use Src\Application\Contracts\TokenGeneratorInterface;
+use Src\Application\DTOs\AuthTokenDTO;
 use Src\Application\DTOs\RegisterUserDTO;
 use Src\Application\DTOs\UserDTO;
 use Src\Application\Exceptions\EmailAlreadyExistsException;
@@ -24,7 +26,8 @@ final class RegisterUserUseCase
 {
     public function __construct(
         private readonly UserRepositoryInterface $userRepository,
-        private readonly EventPublisherInterface $eventPublisher
+        private readonly EventPublisherInterface $eventPublisher,
+        private readonly TokenGeneratorInterface $tokenGenerator
     ) {
     }
 
@@ -33,7 +36,7 @@ final class RegisterUserUseCase
      * 
      * @throws EmailAlreadyExistsException
      */
-    public function execute(RegisterUserDTO $dto): UserDTO
+    public function execute(RegisterUserDTO $dto): AuthTokenDTO
     {
         // 1. Criar Value Objects
         $email = new Email($dto->email);
@@ -62,8 +65,16 @@ final class RegisterUserUseCase
             $this->eventPublisher->publish($event);
         }
 
-        // 6. Retornar DTO do usuário criado
-        return UserDTO::fromEntity($user);
+        // 6. Gerar token de autenticação
+        $token = $this->tokenGenerator->generate($user->getId());
+
+        // 7. Retornar DTO com token
+        return new AuthTokenDTO(
+            accessToken: $token,
+            tokenType: 'bearer',
+            expiresIn: $this->tokenGenerator->getTTL(),
+            user: UserDTO::fromEntity($user)
+        );
     }
 }
 

@@ -120,17 +120,17 @@ final class RabbitMQEventPublisher implements EventPublisherInterface
      */
     public function __destruct()
     {
+        // Silently close connections - errors during destruction are ignored
         try {
-            if (isset($this->channel)) {
-                $this->channel->close();
-            }
-            if (isset($this->connection)) {
-                $this->connection->close();
-            }
-        } catch (\Exception $e) {
-            $this->logger->error('Error closing RabbitMQ connection', [
-                'error' => $e->getMessage(),
-            ]);
+            @$this->channel?->close();
+        } catch (\Throwable $e) {
+            // Ignore
+        }
+
+        try {
+            @$this->connection?->close();
+        } catch (\Throwable $e) {
+            // Ignore
         }
     }
 }
