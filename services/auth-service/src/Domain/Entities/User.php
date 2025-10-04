@@ -127,6 +127,24 @@ final class User
     }
 
     /**
+     * Altera o e-mail do usuário
+     */
+    public function changeEmail(Email $newEmail): void
+    {
+        if (!$this->email->equals($newEmail)) {
+            $this->email = $newEmail;
+            $this->emailVerifiedAt = null; // Reset email verification
+            $this->touch();
+            
+            $this->recordEvent(new UserUpdated(
+                $this->id,
+                ['email' => $newEmail->value()],
+                new DateTimeImmutable()
+            ));
+        }
+    }
+
+    /**
      * Altera a senha do usuário
      */
     public function changePassword(Password $newPassword): void
