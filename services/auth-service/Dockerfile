@@ -75,6 +75,7 @@ COPY --from=composer-stage --chown=www-data:www-data /app /var/www
 COPY --chown=www-data:www-data docker/nginx.conf /etc/nginx/nginx.conf
 COPY --chown=www-data:www-data docker/php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
 COPY --chown=www-data:www-data docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY --chown=root:root docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 # Create required directories and set permissions
 RUN mkdir -p \
@@ -85,7 +86,8 @@ RUN mkdir -p \
     /var/www/bootstrap/cache \
     /run/nginx \
     && chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache \
-    && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+    && chmod -R 775 /var/www/storage /var/www/bootstrap/cache \
+    && chmod +x /usr/local/bin/entrypoint.sh
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
@@ -93,6 +95,9 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
 
 # Expose port
 EXPOSE 8000
+
+# Set entrypoint
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 # Start supervisor (runs as root, manages www-data processes)
 CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

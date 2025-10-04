@@ -23,6 +23,14 @@ final class Email
     }
 
     /**
+     * Factory method para criar a partir de string
+     */
+    public static function fromString(string $email): self
+    {
+        return new self($email);
+    }
+
+    /**
      * Valida se o email é válido
      */
     private function validate(string $email): void

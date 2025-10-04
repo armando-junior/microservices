@@ -25,6 +25,14 @@ final class UserName
     }
 
     /**
+     * Factory method para criar a partir de string
+     */
+    public static function fromString(string $name): self
+    {
+        return new self($name);
+    }
+
+    /**
      * Valida o nome do usuário
      */
     private function validate(string $name): void
