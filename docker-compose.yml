@@ -259,8 +259,8 @@ services:
       REDIS_HOST: redis
       REDIS_PASSWORD: redis_password
       REDIS_PORT: 6379
-      CACHE_STORE: redis
-      SESSION_DRIVER: redis
+      CACHE_STORE: array
+      SESSION_DRIVER: file
       
       # RabbitMQ
       RABBITMQ_HOST: rabbitmq
