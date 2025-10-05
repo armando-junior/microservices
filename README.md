@@ -7,6 +7,22 @@ Sistema ERP completo baseado em arquitetura de microserviços, desenvolvido com 
 [![PHP](https://img.shields.io/badge/PHP-8.3+-purple.svg)](https://php.net)
 [![Docker](https://img.shields.io/badge/Docker-24+-blue.svg)](https://docker.com)
 
+## 📊 Status do Projeto
+
+🎉 **Sprint 1 Concluída com Sucesso!**
+
+- ✅ **Auth Service** - 100% Funcional e Testado
+- ✅ **139 testes passando** (100% success rate)
+- ✅ **6 endpoints** de autenticação implementados
+- ✅ **JWT Authentication** com Redis blacklist
+- ✅ **Clean Architecture** completa
+- ✅ **Documentação** completa (API-DOCS.md, Postman Collection)
+- ✅ **Production Ready** 🚀
+
+**Próximo:** Sprint 2 - RBAC & Email Verification
+
+---
+
 ## 🎯 Visão Geral
 
 Este projeto implementa um sistema ERP completo para gerenciamento de vendas, estoque, logística e financeiro, utilizando arquitetura de microserviços com as melhores práticas do mercado.
@@ -21,12 +37,64 @@ Este projeto implementa um sistema ERP completo para gerenciamento de vendas, es
 
 ## 🚀 Microserviços
 
-1. **Auth Service** - Autenticação e Autorização (JWT, RBAC)
-2. **Inventory Service** - Gestão de Produtos e Estoque
-3. **Sales Service** - Gestão de Vendas e Pedidos
-4. **Logistics Service** - Gestão de Logística e Entregas
-5. **Financial Service** - Gestão Financeira e Pagamentos
-6. **Notification Service** - Notificações (Email, SMS, Push)
+### 1. ✅ **Auth Service** - Autenticação e Autorização
+
+**Status:** 🟢 Sprint 1 Completo (Production Ready)
+
+**Endpoints:**
+- `POST /api/auth/register` - Registro de usuários
+- `POST /api/auth/login` - Autenticação JWT
+- `POST /api/auth/logout` - Logout (token blacklist)
+- `POST /api/auth/refresh` - Refresh token
+- `GET /api/auth/me` - Dados do usuário autenticado
+- `GET /api/health` - Health check
+
+**Features:**
+- JWT Authentication (HS256)
+- Password Hashing (BCrypt, cost 12)
+- Token Blacklist (Redis)
+- Input Validation (FormRequests)
+- Clean Architecture
+- Event Publishing (RabbitMQ)
+- 139 testes automatizados
+
+**Documentação:**
+- [API Documentation](services/auth-service/API-DOCS.md)
+- [Architecture](services/auth-service/ARCHITECTURE.md)
+- [Sprint 1 Summary](SPRINT1-COMPLETO.md)
+- [Postman Collection](services/auth-service/postman-collection.json)
+
+**Base URL:** http://localhost:9001/api
+
+---
+
+### 2. ⏳ **Inventory Service** - Gestão de Produtos e Estoque
+
+**Status:** 🔴 Não iniciado (Sprint 3-4)
+
+---
+
+### 3. ⏳ **Sales Service** - Gestão de Vendas e Pedidos
+
+**Status:** 🔴 Não iniciado (Sprint 5-6)
+
+---
+
+### 4. ⏳ **Logistics Service** - Gestão de Logística e Entregas
+
+**Status:** 🔴 Não iniciado (Sprint 9-10)
+
+---
+
+### 5. ⏳ **Financial Service** - Gestão Financeira e Pagamentos
+
+**Status:** 🔴 Não iniciado (Sprint 7-8)
+
+---
+
+### 6. ⏳ **Notification Service** - Notificações (Email, SMS, Push)
+
+**Status:** 🔴 Não iniciado (Sprint 11)
 
 ## 🛠️ Stack Tecnológico
 
@@ -90,13 +158,18 @@ chmod +x scripts/*.sh
 
 ### 5. Acessar Serviços
 
-- **API Gateway:** http://localhost:8000
+**Microserviços:**
+- **Auth Service API:** http://localhost:9001/api (✅ Sprint 1 Completo)
+- **Auth Service Docs:** [API-DOCS.md](services/auth-service/API-DOCS.md)
+
+**Infraestrutura:**
+- **API Gateway (Kong):** http://localhost:8000
 - **Kong Admin:** http://localhost:8001
 - **RabbitMQ Management:** http://localhost:15672 (admin/admin123)
 - **Grafana:** http://localhost:3000 (admin/admin)
 - **Prometheus:** http://localhost:9090
 - **Jaeger:** http://localhost:16686
-- **Kibana:** http://localhost:5601
+- **Kibana:** http://localhost:5601 (elastic/jr120777)
 
 ## 📖 Documentação Completa
 
@@ -274,14 +347,15 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 ## 🎯 Roadmap
 
 ### Fase 1 - MVP (7 meses)
-- [x] Sprint 0: Infraestrutura
-- [ ] Sprint 1-2: Auth Service
+- [x] Sprint 0: Infraestrutura ✅ (Completo)
+- [x] Sprint 1: Auth Service ✅ (Completo - 139 testes passando)
+- [ ] Sprint 2: Auth Service - RBAC & Email Verification
 - [ ] Sprint 3-4: Inventory Service
 - [ ] Sprint 5-6: Sales Service
 - [ ] Sprint 7-8: Financial Service
 - [ ] Sprint 9-10: Logistics Service
 - [ ] Sprint 11: Notification Service
-- [ ] Sprint 12: API Gateway
+- [ ] Sprint 12: API Gateway Integration
 - [ ] Sprint 13-14: Integração e Deploy
 
 ### Fase 2 - Melhorias (Futuro)
