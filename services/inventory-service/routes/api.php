@@ -2,52 +2,55 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\UserController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\StockController;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes
+| API Routes - Inventory Service
 |--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "api" middleware group. Make something great!
-|
 */
 
 // Health check
 Route::get('/health', function () {
     return response()->json([
         'status' => 'ok',
-        'service' => 'auth-service',
+        'service' => 'inventory-service',
         'timestamp' => now()->toIso8601String(),
     ]);
 });
 
-// Authentication routes (public)
-Route::prefix('auth')->group(function () {
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login']);
-});
-
-// Protected routes (require JWT authentication)
-Route::middleware('jwt.auth')->group(function () {
+// Public routes (TODO: adicionar autenticação JWT depois)
+Route::prefix('v1')->group(function () {
     
-    // Authentication routes (protected)
-    Route::prefix('auth')->group(function () {
-        Route::post('/logout', [AuthController::class, 'logout']);
-        Route::post('/refresh', [AuthController::class, 'refresh']);
-        Route::get('/me', [AuthController::class, 'me']);
+    // Product routes
+    Route::prefix('products')->group(function () {
+        Route::get('/', [ProductController::class, 'index']);
+        Route::get('/{id}', [ProductController::class, 'show']);
+        Route::post('/', [ProductController::class, 'store']);
+        Route::put('/{id}', [ProductController::class, 'update']);
+        Route::patch('/{id}', [ProductController::class, 'update']);
+        Route::delete('/{id}', [ProductController::class, 'destroy']);
     });
 
-    // User management routes
-    Route::prefix('users')->group(function () {
-        Route::get('/{id}', [UserController::class, 'show']);
-        Route::put('/{id}', [UserController::class, 'update']);
-        Route::patch('/{id}', [UserController::class, 'update']);
-        Route::delete('/{id}', [UserController::class, 'destroy']);
+    // Category routes
+    Route::prefix('categories')->group(function () {
+        Route::get('/', [CategoryController::class, 'index']);
+        Route::get('/{id}', [CategoryController::class, 'show']);
+        Route::post('/', [CategoryController::class, 'store']);
+        Route::put('/{id}', [CategoryController::class, 'update']);
+        Route::patch('/{id}', [CategoryController::class, 'update']);
+        Route::delete('/{id}', [CategoryController::class, 'destroy']);
+    });
+
+    // Stock routes
+    Route::prefix('stock')->group(function () {
+        Route::get('/product/{productId}', [StockController::class, 'show']);
+        Route::post('/product/{productId}/increase', [StockController::class, 'increase']);
+        Route::post('/product/{productId}/decrease', [StockController::class, 'decrease']);
+        Route::get('/low-stock', [StockController::class, 'lowStock']);
+        Route::get('/depleted', [StockController::class, 'depleted']);
     });
 });
-
