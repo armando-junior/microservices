@@ -43,6 +43,15 @@ return Application::configure(basePath: dirname(__DIR__))
         // Custom JSON error rendering for API routes (with detailed errors in debug mode)
         $exceptions->render(function (\Throwable $e, $request) {
             if ($request->is('api/*') || $request->expectsJson()) {
+                // Handle ValidationException specially
+                if ($e instanceof \Illuminate\Validation\ValidationException) {
+                    return response()->json([
+                        'message' => $e->getMessage(),
+                        'errors' => $e->errors(),
+                    ], 422);
+                }
+                
+                // Determine status code
                 $status = method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500;
                 
                 $response = [

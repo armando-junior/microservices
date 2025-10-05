@@ -36,7 +36,6 @@ class RegisterRequest extends FormRequest
                 'string',
                 'email:rfc',
                 'max:255',
-                'unique:users,email',
             ],
             'password' => [
                 'required',
@@ -66,7 +65,6 @@ class RegisterRequest extends FormRequest
             'email.string' => 'O e-mail deve ser um texto.',
             'email.email' => 'O e-mail deve ser válido.',
             'email.max' => 'O e-mail não pode ter mais de :max caracteres.',
-            'email.unique' => 'Este e-mail já está em uso.',
             
             'password.required' => 'A senha é obrigatória.',
             'password.string' => 'A senha deve ser um texto.',

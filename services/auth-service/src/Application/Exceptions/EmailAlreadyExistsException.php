@@ -13,7 +13,7 @@ final class EmailAlreadyExistsException extends ApplicationException
 {
     public function __construct(string $email)
     {
-        parent::__construct("Email {$email} already exists", 409);
+        parent::__construct("Email already exists: {$email}", 409);
     }
 }
 

@@ -11,9 +11,9 @@ namespace Src\Application\Exceptions;
  */
 final class InvalidCredentialsException extends ApplicationException
 {
-    public function __construct()
+    public function __construct(string $message = 'Invalid credentials provided')
     {
-        parent::__construct('Invalid credentials provided', 401);
+        parent::__construct($message, 401);
     }
 }
 

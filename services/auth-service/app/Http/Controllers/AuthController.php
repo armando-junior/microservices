@@ -226,18 +226,26 @@ class AuthController extends Controller
             }
 
             // Gerar novo token
-            $dto = new LoginUserDTO(
-                email: $userDTO->email,
-                password: '' // Não precisa da senha para refresh
+            $tokenGenerator = app(\Src\Application\Contracts\TokenGeneratorInterface::class);
+            $newToken = $tokenGenerator->generate(
+                \Src\Domain\ValueObjects\UserId::fromString($userId),
+                [
+                    'email' => $userDTO->email,
+                    'name' => $userDTO->name,
+                ]
             );
 
-            // Para refresh, vamos apenas gerar um novo token sem validar senha
-            $tokenGenerator = app(\Src\Application\Contracts\TokenGeneratorInterface::class);
-            $newToken = $tokenGenerator->generate($userId, $userDTO->email);
+            // Criar AuthTokenDTO para a resposta
+            $authTokenDTO = new \Src\Application\DTOs\AuthTokenDTO(
+                accessToken: $newToken,
+                tokenType: 'bearer',
+                expiresIn: $tokenGenerator->getTTL(),
+                user: $userDTO
+            );
 
             return response()->json([
                 'message' => 'Token refreshed successfully',
-                'auth' => new AuthTokenResource($newToken),
+                'auth' => new AuthTokenResource($authTokenDTO),
             ], 200);
 
         } catch (UserNotFoundException $e) {

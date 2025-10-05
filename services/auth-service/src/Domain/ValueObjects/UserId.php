@@ -20,7 +20,7 @@ final class UserId
     private function __construct(string $id)
     {
         $this->validate($id);
-        $this->value = $id;
+        $this->value = strtolower($id); // Normalize to lowercase for consistency
     }
 
     /**

@@ -48,7 +48,7 @@ final class LoginUserUseCase
 
         // 3. Verificar se usuário está ativo
         if (!$user->isActive()) {
-            throw new InvalidCredentialsException();
+            throw new InvalidCredentialsException('User is inactive');
         }
 
         // 4. Verificar senha
@@ -68,7 +68,7 @@ final class LoginUserUseCase
         // 6. Retornar token e dados do usuário
         return new AuthTokenDTO(
             accessToken: $token,
-            tokenType: 'Bearer',
+            tokenType: 'bearer',
             expiresIn: $this->tokenGenerator->getTTL(),
             user: UserDTO::fromEntity($user)
         );
