@@ -1,0 +1,80 @@
+# ==============================================================================
+# Auth Service - Development Dockerfile
+# Simplified for development with hot-reload support
+# ==============================================================================
+
+FROM php:8.3-cli-alpine
+
+# Metadata
+LABEL maintainer="auth-service" \
+      description="Authentication Microservice - Development" \
+      version="1.0.0-dev"
+
+# Set working directory
+WORKDIR /var/www
+
+# Install system dependencies
+RUN apk add --no-cache \
+    git \
+    curl \
+    postgresql-dev \
+    bash \
+    vim \
+    && rm -rf /var/cache/apk/*
+
+# Install PHP extensions
+RUN docker-php-ext-install -j$(nproc) \
+    pdo_pgsql \
+    pgsql \
+    bcmath \
+    pcntl
+
+# Install Redis extension
+RUN apk add --no-cache --virtual .build-deps \
+    $PHPIZE_DEPS \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apk del .build-deps \
+    && rm -rf /tmp/pear
+
+# Install Xdebug for debugging
+RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS linux-headers \
+    && pecl install xdebug \
+    && docker-php-ext-enable xdebug \
+    && apk del .build-deps \
+    && rm -rf /tmp/pear
+
+# Configure PHP for development
+RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" \
+    && echo "xdebug.mode=debug" >> "$PHP_INI_DIR/conf.d/xdebug.ini" \
+    && echo "xdebug.start_with_request=yes" >> "$PHP_INI_DIR/conf.d/xdebug.ini" \
+    && echo "xdebug.client_host=host.docker.internal" >> "$PHP_INI_DIR/conf.d/xdebug.ini" \
+    && echo "xdebug.client_port=9003" >> "$PHP_INI_DIR/conf.d/xdebug.ini" \
+    && echo "memory_limit = 512M" >> "$PHP_INI_DIR/conf.d/custom.ini"
+
+# Install Composer
+COPY --from=composer:2.7 /usr/bin/composer /usr/bin/composer
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/api/health || exit 1
+
+# Create entrypoint script
+RUN echo '#!/bin/sh' > /entrypoint.sh && \
+    echo 'set -e' >> /entrypoint.sh && \
+    echo 'cd /var/www' >> /entrypoint.sh && \
+    echo 'if [ ! -d "vendor" ] || [ ! -f "vendor/autoload.php" ]; then' >> /entrypoint.sh && \
+    echo '  echo "Installing composer dependencies..."' >> /entrypoint.sh && \
+    echo '  composer install --no-interaction --prefer-dist' >> /entrypoint.sh && \
+    echo 'fi' >> /entrypoint.sh && \
+    echo 'exec "$@"' >> /entrypoint.sh && \
+    chmod +x /entrypoint.sh
+
+# Expose port
+EXPOSE 8000
+
+# Set entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
+
+# Start Laravel development server
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
