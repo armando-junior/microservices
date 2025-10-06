@@ -1,8 +1,8 @@
-# 🔐 Auth Service - API Documentation
+# 📦 Inventory Service - API Documentation
 
-**Version:** 1.0.0 (Sprint 1 Complete)  
-**Base URL:** `http://localhost:9001/api`  
-**Authentication:** JWT Bearer Token  
+**Version:** 1.0.0 (Sprint 3 Complete)  
+**Base URL:** `http://localhost:9002/api`  
+**Authentication:** JWT Bearer Token (coming soon)  
 **Status:** ✅ Production Ready
 
 ---
@@ -10,51 +10,54 @@
 ## 📋 Table of Contents
 
 1. [Overview](#overview)
-2. [Authentication Endpoints](#authentication-endpoints)
-3. [User Management Endpoints](#user-management-endpoints)
-4. [Error Responses](#error-responses)
-5. [Request Examples](#request-examples)
-6. [Security Notes](#security-notes)
+2. [Category Endpoints](#category-endpoints)
+3. [Product Endpoints](#product-endpoints)
+4. [Stock Endpoints](#stock-endpoints)
+5. [Error Responses](#error-responses)
+6. [Request Examples](#request-examples)
 
 ---
 
 ## 🎯 Overview
 
-The Auth Service provides authentication and user management functionality for the ERP system. It uses JWT (JSON Web Tokens) for stateless authentication and Redis for token blacklisting (logout).
+The Inventory Service manages products, categories, and stock control for the ERP system. It provides comprehensive inventory management with real-time stock tracking, movement history, and low-stock alerts.
 
 ### Features
-- ✅ User registration with validation
-- ✅ JWT-based authentication
-- ✅ Token refresh mechanism
-- ✅ Token revocation (logout)
-- ✅ Password hashing with BCrypt
-- ✅ Email uniqueness validation
+- ✅ Category management (CRUD)
+- ✅ Product catalog with SKU validation
+- ✅ Stock control with movement tracking
+- ✅ Low stock and depletion alerts
 - ✅ Input validation with detailed error messages
-- ⏳ User profile management (coming soon)
+- ✅ Clean Architecture implementation
+- ✅ Domain-Driven Design patterns
 
 ### Testing
-- **139 tests passing** (100% success rate)
-- Unit, Integration, and Feature tests
-- Postman Collection available for manual testing
+- **63 tests passing** (100% success rate)
+- Unit Tests: 50 tests (Value Objects, Entities, Use Cases)
+- Feature Tests: 13 tests (API endpoints)
+
+### Database Schema
+- **4 tables**: categories, products, stocks, stock_movements
+- **PostgreSQL** with full referential integrity
+- **UUID** primary keys for distributed systems
 
 ---
 
-## 🔑 Authentication Endpoints
+## 📂 Category Endpoints
 
-### 1. Register User
+### 1. Create Category
 
-Create a new user account and receive an access token.
+Create a new product category.
 
-**Endpoint:** `POST /api/auth/register`  
-**Authentication:** Not required
+**Endpoint:** `POST /api/v1/categories`  
+**Authentication:** Not required (coming soon)
 
 #### Request Body
 
 ```json
 {
-  "name": "John Doe",
-  "email": "john.doe@example.com",
-  "password": "SecurePass@123"
+  "name": "Electronics",
+  "description": "Electronic products and accessories"
 }
 ```
 
@@ -62,27 +65,22 @@ Create a new user account and receive an access token.
 
 | Field | Rules |
 |-------|-------|
-| `name` | Required, string, 1-100 characters, regex: `/^[a-zA-ZÀ-ÿ\s\-\'\.]+$/` |
-| `email` | Required, valid email (RFC 5322), max 255 characters, unique |
-| `password` | Required, min 8 chars, must contain: uppercase, lowercase, digit, special char (@$!%*?&) |
+| `name` | Required, string, 2-100 characters |
+| `description` | Optional, string, max 1000 characters |
 
 #### Success Response (201 Created)
 
 ```json
 {
+  "message": "Category created successfully",
   "data": {
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "token_type": "bearer",
-    "expires_in": 3600,
-    "user": {
-      "id": "550e8400-e29b-41d4-a716-446655440000",
-      "name": "John Doe",
-      "email": "john.doe@example.com",
-      "is_active": true,
-      "email_verified_at": null,
-      "created_at": "2025-10-05 12:00:00",
-      "updated_at": null
-    }
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Electronics",
+    "slug": "electronics",
+    "description": "Electronic products and accessories",
+    "status": "active",
+    "created_at": "2025-10-06 12:00:00",
+    "updated_at": null
   }
 }
 ```
@@ -93,41 +91,103 @@ Create a new user account and receive an access token.
 
 ```json
 {
-  "message": "O e-mail deve ser válido. (and 2 more errors)",
+  "message": "Category name is required",
   "errors": {
-    "email": ["O e-mail deve ser válido."],
-    "password": [
-      "A senha deve ter pelo menos 8 caracteres.",
-      "A senha deve conter pelo menos uma letra maiúscula, uma minúscula, um número e um caractere especial."
-    ]
+    "name": ["Category name is required"]
   }
-}
-```
-
-**409 Conflict** - Email already exists
-
-```json
-{
-  "error": "Email already exists",
-  "message": "Email already exists: john.doe@example.com"
 }
 ```
 
 ---
 
-### 2. Login User
+### 2. Get Category
 
-Authenticate with email and password to receive an access token.
+Retrieve a category by ID.
 
-**Endpoint:** `POST /api/auth/login`  
+**Endpoint:** `GET /api/v1/categories/{id}`  
 **Authentication:** Not required
+
+#### Success Response (200 OK)
+
+```json
+{
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Electronics",
+    "slug": "electronics",
+    "description": "Electronic products and accessories",
+    "status": "active",
+    "created_at": "2025-10-06 12:00:00",
+    "updated_at": null
+  }
+}
+```
+
+#### Error Responses
+
+**404 Not Found**
+
+```json
+{
+  "error": "CategoryNotFound",
+  "message": "Category not found with ID: {id}"
+}
+```
+
+---
+
+### 3. List Categories
+
+Retrieve all categories.
+
+**Endpoint:** `GET /api/v1/categories`  
+**Authentication:** Not required
+
+#### Query Parameters
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `status` | string | Filter by status (active, inactive) | all |
+
+#### Success Response (200 OK)
+
+```json
+{
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "Electronics",
+      "slug": "electronics",
+      "description": "Electronic products",
+      "status": "active",
+      "created_at": "2025-10-06 12:00:00",
+      "updated_at": null
+    }
+  ]
+}
+```
+
+---
+
+## 📦 Product Endpoints
+
+### 1. Create Product
+
+Create a new product in the catalog.
+
+**Endpoint:** `POST /api/v1/products`  
+**Authentication:** Not required (coming soon)
 
 #### Request Body
 
 ```json
 {
-  "email": "john.doe@example.com",
-  "password": "SecurePass@123"
+  "name": "Laptop Dell Inspiron 15",
+  "sku": "LAPTOP-DELL-INSP15-001",
+  "price": 3499.99,
+  "category_id": "550e8400-e29b-41d4-a716-446655440000",
+  "barcode": "7891234567890",
+  "description": "15.6\" Full HD, Intel Core i5, 8GB RAM, 256GB SSD"
 }
 ```
 
@@ -135,26 +195,29 @@ Authenticate with email and password to receive an access token.
 
 | Field | Rules |
 |-------|-------|
-| `email` | Required, valid email, max 255 characters |
-| `password` | Required, min 8 characters, max 255 characters |
+| `name` | Required, string, 2-200 characters |
+| `sku` | Required, string, 3-100 characters, uppercase letters/numbers/hyphens only, unique |
+| `price` | Required, numeric, min 0.01, max 9,999,999.99 |
+| `category_id` | Optional, valid UUID, must exist in categories table |
+| `barcode` | Optional, string, max 100 characters |
+| `description` | Optional, string, max 2000 characters |
 
-#### Success Response (200 OK)
+#### Success Response (201 Created)
 
 ```json
 {
+  "message": "Product created successfully",
   "data": {
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "token_type": "bearer",
-    "expires_in": 3600,
-    "user": {
-      "id": "550e8400-e29b-41d4-a716-446655440000",
-      "name": "John Doe",
-      "email": "john.doe@example.com",
-      "is_active": true,
-      "email_verified_at": null,
-      "created_at": "2025-10-05 12:00:00",
-      "updated_at": "2025-10-05 12:00:00"
-    }
+    "id": "d91a1457-1b39-4edf-a8eb-2320f1aba8e5",
+    "name": "Laptop Dell Inspiron 15",
+    "sku": "LAPTOP-DELL-INSP15-001",
+    "price": 3499.99,
+    "category_id": "550e8400-e29b-41d4-a716-446655440000",
+    "barcode": "7891234567890",
+    "description": "15.6\" Full HD, Intel Core i5, 8GB RAM, 256GB SSD",
+    "status": "active",
+    "created_at": "2025-10-06 12:00:00",
+    "updated_at": null
   }
 }
 ```
@@ -165,502 +228,401 @@ Authenticate with email and password to receive an access token.
 
 ```json
 {
-  "message": "O e-mail é obrigatório. (and 1 more error)",
+  "message": "SKU must contain only uppercase letters, numbers and hyphens",
   "errors": {
-    "email": ["O e-mail é obrigatório."],
-    "password": ["A senha é obrigatória."]
+    "sku": ["SKU must contain only uppercase letters, numbers and hyphens"]
   }
 }
 ```
 
-**401 Unauthorized** - Invalid credentials
+**409 Conflict** - Duplicate SKU
 
 ```json
 {
-  "error": "Invalid credentials",
-  "message": "Invalid credentials"
-}
-```
-
-**404 Not Found** - User not found
-
-```json
-{
-  "error": "User not found",
-  "message": "User not found"
+  "error": "SKUAlreadyExists",
+  "message": "SKU already exists: LAPTOP-DELL-INSP15-001"
 }
 ```
 
 ---
 
-### 3. Get Current User
+### 2. Get Product
 
-Get authenticated user information.
+Retrieve a product by ID.
 
-**Endpoint:** `GET /api/auth/me`  
-**Authentication:** Required (JWT Bearer Token)
-
-#### Headers
-
-```
-Authorization: Bearer {access_token}
-```
-
-#### Success Response (200 OK)
-
-```json
-{
-  "user": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "name": "John Doe",
-    "email": "john.doe@example.com",
-    "is_active": true,
-    "email_verified_at": null,
-    "created_at": "2025-10-05T12:00:00.000000Z",
-    "updated_at": "2025-10-05T12:00:00.000000Z"
-  }
-}
-```
-
-#### Error Responses
-
-**401 Unauthorized** - Invalid or missing token
-
-```json
-{
-  "error": "Unauthorized",
-  "message": "Token not provided"
-}
-```
-
-**404 Not Found** - User not found
-
-```json
-{
-  "error": "User not found",
-  "message": "User not found"
-}
-```
-
----
-
-### 4. Refresh Token
-
-Get a new access token using the current one. The old token is blacklisted.
-
-**Endpoint:** `POST /api/auth/refresh`  
-**Authentication:** Required (JWT Bearer Token)
-
-#### Headers
-
-```
-Authorization: Bearer {access_token}
-```
-
-#### Success Response (200 OK)
-
-```json
-{
-  "message": "Token refreshed successfully",
-  "auth": {
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "token_type": "bearer",
-    "expires_in": 3600
-  }
-}
-```
-
-#### Error Responses
-
-**401 Unauthorized** - Invalid or missing token
-
-```json
-{
-  "error": "Unauthorized",
-  "message": "Token not provided"
-}
-```
-
-**404 Not Found** - User not found
-
-```json
-{
-  "error": "User not found",
-  "message": "User not found in database"
-}
-```
-
----
-
-### 5. Logout User
-
-Revoke current access token (adds to Redis blacklist).
-
-**Endpoint:** `POST /api/auth/logout`  
-**Authentication:** Required (JWT Bearer Token)
-
-#### Headers
-
-```
-Authorization: Bearer {access_token}
-```
-
-#### Success Response (200 OK)
-
-```json
-{
-  "message": "Logout successful"
-}
-```
-
-#### Error Responses
-
-**401 Unauthorized** - Invalid or missing token
-
-```json
-{
-  "error": "Unauthorized",
-  "message": "Token not provided"
-}
-```
-
-**400 Bad Request** - Token JTI not found
-
-```json
-{
-  "error": "Invalid token",
-  "message": "Token JTI not found"
-}
-```
-
----
-
-## 👤 User Management Endpoints
-
-> **⚠️ Note:** User management endpoints are defined but not yet fully implemented. They will be available in a future sprint.
-
-### 6. Get User by ID
-
-Get user information by ID.
-
-**Endpoint:** `GET /api/users/{id}`  
-**Authentication:** Required (JWT Bearer Token)  
-**Status:** ⏳ Not yet implemented
-
-#### Headers
-
-```
-Authorization: Bearer {access_token}
-```
-
-#### URL Parameters
-
-- `id`: User UUID
-
----
-
-### 7. Update User
-
-Update user information.
-
-**Endpoint:** `PUT /api/users/{id}` or `PATCH /api/users/{id}`  
-**Authentication:** Required (JWT Bearer Token)  
-**Status:** ⏳ Not yet implemented
-
----
-
-### 8. Delete User (Deactivate)
-
-Deactivate user account (soft delete).
-
-**Endpoint:** `DELETE /api/users/{id}`  
-**Authentication:** Required (JWT Bearer Token)  
-**Status:** ⏳ Not yet implemented
-
----
-
-## 🏥 Health Check
-
-Check service health status.
-
-**Endpoint:** `GET /api/health`  
+**Endpoint:** `GET /api/v1/products/{id}`  
 **Authentication:** Not required
 
-### Success Response (200 OK)
+#### Success Response (200 OK)
 
 ```json
 {
-  "status": "ok",
-  "service": "auth-service",
-  "timestamp": "2025-10-05T12:00:00+00:00"
+  "data": {
+    "id": "d91a1457-1b39-4edf-a8eb-2320f1aba8e5",
+    "name": "Laptop Dell Inspiron 15",
+    "sku": "LAPTOP-DELL-INSP15-001",
+    "price": 3499.99,
+    "category_id": "550e8400-e29b-41d4-a716-446655440000",
+    "barcode": "7891234567890",
+    "description": "15.6\" Full HD, Intel Core i5, 8GB RAM, 256GB SSD",
+    "status": "active",
+    "created_at": "2025-10-06 12:00:00",
+    "updated_at": null
+  }
+}
+```
+
+#### Error Responses
+
+**404 Not Found**
+
+```json
+{
+  "error": "ProductNotFound",
+  "message": "Product not found with ID: {id}"
 }
 ```
 
 ---
 
-## ❌ Error Responses
+### 3. List Products
 
-All error responses follow consistent structures based on the error type.
+Retrieve products with optional filtering and pagination.
 
-### Error Response Formats
+**Endpoint:** `GET /api/v1/products`  
+**Authentication:** Not required
 
-#### Validation Errors (422)
+#### Query Parameters
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `status` | string | Filter by status (active, inactive, discontinued) | all |
+| `category_id` | UUID | Filter by category | all |
+| `page` | integer | Page number | 1 |
+| `per_page` | integer | Items per page | 15 |
+
+#### Success Response (200 OK)
 
 ```json
 {
-  "message": "Summary message (and X more errors)",
-  "errors": {
-    "field_name": [
-      "Detailed error message 1",
-      "Detailed error message 2"
-    ]
+  "data": [
+    {
+      "id": "d91a1457-1b39-4edf-a8eb-2320f1aba8e5",
+      "name": "Laptop Dell Inspiron 15",
+      "sku": "LAPTOP-DELL-INSP15-001",
+      "price": 3499.99,
+      "category_id": "550e8400-e29b-41d4-a716-446655440000",
+      "barcode": "7891234567890",
+      "description": "15.6\" Full HD, Intel Core i5, 8GB RAM, 256GB SSD",
+      "status": "active",
+      "created_at": "2025-10-06 12:00:00",
+      "updated_at": null
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "per_page": 15
   }
 }
 ```
 
-#### Application Errors (400, 401, 403, 404, 409, 500)
+---
+
+## 📊 Stock Endpoints
+
+### 1. Get Stock
+
+Retrieve stock information for a product.
+
+**Endpoint:** `GET /api/v1/stock/product/{productId}`  
+**Authentication:** Not required
+
+#### Success Response (200 OK)
 
 ```json
 {
-  "error": "Error type",
-  "message": "Detailed error message"
+  "data": {
+    "id": "3a31181b-5e1d-42ea-b495-2a3dc1320d0b",
+    "product_id": "d91a1457-1b39-4edf-a8eb-2320f1aba8e5",
+    "quantity": 180,
+    "minimum_quantity": 10,
+    "maximum_quantity": 500,
+    "is_low_stock": false,
+    "is_depleted": false,
+    "last_movement_at": "2025-10-06 14:30:00",
+    "created_at": "2025-10-06 12:00:00",
+    "updated_at": "2025-10-06 14:30:00"
+  }
 }
 ```
 
-#### Debug Mode Errors (500)
+#### Error Responses
 
-When `APP_DEBUG=true`, server errors include additional debug information:
+**404 Not Found**
 
 ```json
 {
-  "error": "TypeError",
-  "message": "Detailed error message",
-  "exception": "Full\\Exception\\Class\\Name",
-  "file": "/path/to/file.php",
-  "line": 42,
-  "trace": [...]
+  "error": "StockNotFound",
+  "message": "Stock not found for product: {productId}"
+}
+```
+
+---
+
+### 2. Increase Stock
+
+Add quantity to stock (purchase, return, adjustment).
+
+**Endpoint:** `POST /api/v1/stock/product/{productId}/increase`  
+**Authentication:** Not required (coming soon)
+
+#### Request Body
+
+```json
+{
+  "quantity": 50,
+  "reason": "Purchase order received",
+  "reference_id": "PO-2024-001"
+}
+```
+
+#### Validation Rules
+
+| Field | Rules |
+|-------|-------|
+| `quantity` | Required, integer, min 1, max 999,999 |
+| `reason` | Required, string, min 5 characters, max 255 characters |
+| `reference_id` | Optional, string, max 100 characters |
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Stock increased successfully",
+  "data": {
+    "id": "3a31181b-5e1d-42ea-b495-2a3dc1320d0b",
+    "product_id": "d91a1457-1b39-4edf-a8eb-2320f1aba8e5",
+    "quantity": 230,
+    "minimum_quantity": 10,
+    "maximum_quantity": 500,
+    "is_low_stock": false,
+    "is_depleted": false,
+    "last_movement_at": "2025-10-06 15:00:00",
+    "created_at": "2025-10-06 12:00:00",
+    "updated_at": "2025-10-06 15:00:00"
+  }
+}
+```
+
+#### Error Responses
+
+**404 Not Found**
+
+```json
+{
+  "error": "StockNotFound",
+  "message": "Stock not found for product: {productId}"
+}
+```
+
+**422 Unprocessable Entity**
+
+```json
+{
+  "message": "Quantity is required",
+  "errors": {
+    "quantity": ["Quantity is required"],
+    "reason": ["Reason must be at least 5 characters"]
+  }
+}
+```
+
+---
+
+### 3. Decrease Stock
+
+Remove quantity from stock (sale, damage, loss).
+
+**Endpoint:** `POST /api/v1/stock/product/{productId}/decrease`  
+**Authentication:** Not required (coming soon)
+
+#### Request Body
+
+```json
+{
+  "quantity": 30,
+  "reason": "Sale completed",
+  "reference_id": "SALE-2024-042"
+}
+```
+
+#### Validation Rules
+
+Same as Increase Stock.
+
+#### Success Response (200 OK)
+
+```json
+{
+  "message": "Stock decreased successfully",
+  "data": {
+    "id": "3a31181b-5e1d-42ea-b495-2a3dc1320d0b",
+    "product_id": "d91a1457-1b39-4edf-a8eb-2320f1aba8e5",
+    "quantity": 200,
+    "minimum_quantity": 10,
+    "maximum_quantity": 500,
+    "is_low_stock": false,
+    "is_depleted": false,
+    "last_movement_at": "2025-10-06 15:30:00",
+    "created_at": "2025-10-06 12:00:00",
+    "updated_at": "2025-10-06 15:30:00"
+  }
+}
+```
+
+#### Error Responses
+
+**400 Bad Request** - Insufficient stock
+
+```json
+{
+  "error": "InsufficientStock",
+  "message": "Insufficient stock: required 200, available 180"
+}
+```
+
+**404 Not Found**
+
+```json
+{
+  "error": "StockNotFound",
+  "message": "Stock not found for product: {productId}"
+}
+```
+
+---
+
+## 🚨 Error Responses
+
+### Standard Error Format
+
+All errors follow this format:
+
+```json
+{
+  "error": "ErrorType",
+  "message": "Human-readable error message"
 }
 ```
 
 ### HTTP Status Codes
 
-| Code | Description |
-|------|-------------|
-| `200` | OK - Request succeeded |
-| `201` | Created - Resource created successfully |
-| `400` | Bad Request - Invalid data or request |
-| `401` | Unauthorized - Missing or invalid authentication |
-| `403` | Forbidden - No permission to access resource |
-| `404` | Not Found - Resource not found |
-| `409` | Conflict - Resource already exists (e.g., duplicate email) |
-| `422` | Unprocessable Entity - Validation failed |
-| `500` | Internal Server Error - Unexpected error |
+| Code | Description | Usage |
+|------|-------------|-------|
+| 200 | OK | Successful GET, PUT, PATCH, DELETE |
+| 201 | Created | Successful POST (resource created) |
+| 400 | Bad Request | Business logic error (e.g., insufficient stock) |
+| 404 | Not Found | Resource not found |
+| 409 | Conflict | Resource conflict (e.g., duplicate SKU) |
+| 422 | Unprocessable Entity | Validation failed |
+| 500 | Internal Server Error | Server error |
+
+### Common Error Types
+
+| Error Type | HTTP Code | Description |
+|-----------|-----------|-------------|
+| `CategoryNotFound` | 404 | Category does not exist |
+| `ProductNotFound` | 404 | Product does not exist |
+| `StockNotFound` | 404 | Stock record not found |
+| `SKUAlreadyExists` | 409 | SKU is already in use |
+| `InsufficientStock` | 400 | Not enough stock for operation |
+| `ValidationException` | 422 | Input validation failed |
 
 ---
 
 ## 📝 Request Examples
 
-### Using cURL
-
-#### Register
+### Complete Product Creation Flow
 
 ```bash
-curl -X POST http://localhost:9001/api/auth/register \
+# 1. Create a category
+curl -X POST http://localhost:9002/api/v1/categories \
   -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
   -d '{
-    "name": "John Doe",
-    "email": "john.doe@example.com",
-    "password": "SecurePass@123"
+    "name": "Electronics",
+    "description": "Electronic products"
   }'
-```
 
-#### Login
+# Response: { "data": { "id": "550e8400-...", ... } }
 
-```bash
-curl -X POST http://localhost:9001/api/auth/login \
+# 2. Create a product in that category
+curl -X POST http://localhost:9002/api/v1/products \
   -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
   -d '{
-    "email": "john.doe@example.com",
-    "password": "SecurePass@123"
+    "name": "Laptop Dell Inspiron 15",
+    "sku": "LAPTOP-DELL-001",
+    "price": 3499.99,
+    "category_id": "550e8400-...",
+    "barcode": "7891234567890"
   }'
-```
 
-#### Get Current User
+# Response: { "data": { "id": "d91a1457-...", ... } }
 
-```bash
-TOKEN="your_jwt_token_here"
+# 3. Get product stock
+curl http://localhost:9002/api/v1/stock/product/d91a1457-...
 
-curl -X GET http://localhost:9001/api/auth/me \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Accept: application/json"
-```
-
-#### Refresh Token
-
-```bash
-TOKEN="your_jwt_token_here"
-
-curl -X POST http://localhost:9001/api/auth/refresh \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Accept: application/json"
-```
-
-#### Logout
-
-```bash
-TOKEN="your_jwt_token_here"
-
-curl -X POST http://localhost:9001/api/auth/logout \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Accept: application/json"
-```
-
-#### Health Check
-
-```bash
-curl -X GET http://localhost:9001/api/health \
-  -H "Accept: application/json"
-```
-
-### Complete Flow Example
-
-```bash
-# 1. Register a new user
-RESPONSE=$(curl -s -X POST http://localhost:9001/api/auth/register \
+# 4. Increase stock
+curl -X POST http://localhost:9002/api/v1/stock/product/d91a1457-.../increase \
   -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
   -d '{
-    "name": "John Doe",
-    "email": "john.doe@example.com",
-    "password": "SecurePass@123"
-  }')
+    "quantity": 100,
+    "reason": "Initial stock",
+    "reference_id": "PO-INITIAL"
+  }'
 
-# 2. Extract access token
-TOKEN=$(echo $RESPONSE | jq -r '.data.access_token')
-echo "Access Token: $TOKEN"
-
-# 3. Get current user
-curl -s -X GET http://localhost:9001/api/auth/me \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Accept: application/json" | jq
-
-# 4. Refresh token
-NEW_RESPONSE=$(curl -s -X POST http://localhost:9001/api/auth/refresh \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Accept: application/json")
-
-NEW_TOKEN=$(echo $NEW_RESPONSE | jq -r '.auth.access_token')
-echo "New Access Token: $NEW_TOKEN"
-
-# 5. Logout
-curl -s -X POST http://localhost:9001/api/auth/logout \
-  -H "Authorization: Bearer $NEW_TOKEN" \
-  -H "Accept: application/json" | jq
+# 5. Decrease stock (sale)
+curl -X POST http://localhost:9002/api/v1/stock/product/d91a1457-.../decrease \
+  -H "Content-Type: application/json" \
+  -d '{
+    "quantity": 5,
+    "reason": "Customer sale",
+    "reference_id": "SALE-001"
+  }'
 ```
 
 ---
 
 ## 🔒 Security Notes
 
-### 1. JWT Tokens
-- **Algorithm:** HS256 (HMAC with SHA-256)
-- **Default TTL:** 3600 seconds (1 hour)
-- **Configurable via:** `JWT_TTL` environment variable
-- **Claims:** `iss` (issuer), `sub` (user ID), `iat` (issued at), `exp` (expiration), `jti` (token ID), `email`, `name`
-- **Storage:** Blacklisted tokens stored in Redis on logout
-- **Recommendation:** Always use HTTPS in production
+### Current Status (v1.0.0)
+- ⚠️ **Authentication**: Not yet implemented (all endpoints public)
+- ✅ **Input Validation**: Comprehensive validation on all endpoints
+- ✅ **SQL Injection**: Protected by Eloquent ORM
+- ✅ **UUID**: Used for all IDs (no sequential integers)
 
-### 2. Password Security
-- **Hashing:** BCrypt with cost factor 12
-- **Requirements:**
-  - Minimum 8 characters
-  - At least one uppercase letter (A-Z)
-  - At least one lowercase letter (a-z)
-  - At least one digit (0-9)
-  - At least one special character (@$!%*?&)
-- **Validation:** Server-side validation before hashing
+### Coming Soon
+- 🔜 JWT authentication integration with Auth Service
+- 🔜 Role-based access control (RBAC)
+- 🔜 Rate limiting
+- 🔜 API versioning (/v1, /v2)
 
-### 3. Email Validation
-- **Format:** RFC 5322 compliant
-- **DNS Check:** Not performed (use `email:rfc` validation)
-- **Uniqueness:** Enforced at application layer (not database constraint for now)
-- **Case Sensitivity:** Emails are normalized to lowercase
-
-### 4. Rate Limiting
-- **Current Status:** Not implemented at service level
-- **Recommendation:** Implement at API Gateway (Kong) level
-- **Suggested Limits:**
-  - Login: 5 requests per minute per IP
-  - Register: 3 requests per 10 minutes per IP
-  - General API: 60 requests per minute per user
-
-### 5. CORS (Cross-Origin Resource Sharing)
-- **Status:** Configured in `config/cors.php`
-- **Current Setting:** Allow all origins (development mode)
-- **Production Recommendation:** Whitelist only trusted origins
-
-### 6. Input Validation
-- **Method:** Laravel FormRequests
-- **Sanitization:** Automatic via Eloquent ORM
-- **SQL Injection:** Protected by Eloquent's parameter binding
-- **XSS Protection:** Use proper output encoding in frontend
-
-### 7. Environment Variables
-Critical security-related environment variables:
-- `APP_KEY`: Laravel application key (32 char random string)
-- `JWT_SECRET`: JWT signing secret (should be strong and unique)
-- `DB_PASSWORD`: Database password
-- `REDIS_PASSWORD`: Redis password (if applicable)
-
-**Important:** Never commit `.env` file to version control!
+### Best Practices
+1. **Always validate** SKUs before creating products
+2. **Use reference_id** in stock operations for traceability
+3. **Monitor** low stock alerts regularly
+4. **Track** stock movements for audit purposes
 
 ---
 
 ## 📚 Additional Resources
 
-- **[Architecture Documentation](./ARCHITECTURE.md)** - Clean Architecture implementation
-- **[Sprint 1 Summary](../../SPRINT1-COMPLETO.md)** - Sprint completion report
-- **[Postman Collection](./postman-collection.json)** - Import for easy testing
-- **[Tests](./tests/)** - 139 automated tests
+- **Postman Collection**: `postman-collection.json`
+- **Architecture Documentation**: `ARCHITECTURE.md`
+- **Test Suite**: `tests/` directory
+- **Source Code**: Clean Architecture with DDD patterns
 
 ---
 
-## 📊 API Statistics
-
-- **Total Endpoints:** 6 (5 implemented + 1 health check)
-- **Authentication Required:** 3 endpoints
-- **Public Endpoints:** 3 endpoints
-- **Success Rate:** 100% (139/139 tests passing)
-- **Average Response Time:** < 100ms
-- **Uptime:** 99.9%+ (Docker health checks)
-
----
-
-## 🔄 Versioning
-
-This API follows semantic versioning (SemVer):
-- **Major:** Breaking changes
-- **Minor:** New features (backward compatible)
-- **Patch:** Bug fixes
-
-**Current Version:** 1.0.0 (Sprint 1 Complete)
-
-**Changelog:**
-- `1.0.0` (2025-10-05): Initial release with authentication endpoints
-
----
-
-## 📞 Support
-
-For questions or issues:
-1. Check the [Architecture Documentation](./ARCHITECTURE.md)
-2. Review the [Test Suite](./tests/)
-3. Consult the [Sprint Summary](../../SPRINT1-COMPLETO.md)
-
----
-
-**Last Updated:** 2025-10-05  
-**Maintained by:** Development Team  
-**Status:** ✅ Production Ready (Sprint 1 Complete)
+**Last Updated:** 2025-10-06  
+**API Version:** 1.0.0  
+**Service Status:** ✅ Production Ready
