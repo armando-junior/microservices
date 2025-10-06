@@ -9,17 +9,28 @@ Sistema ERP completo baseado em arquitetura de microserviços, desenvolvido com 
 
 ## 📊 Status do Projeto
 
-🎉 **Sprint 1 Concluída com Sucesso!**
+🎉 **3 Microserviços Implementados e Funcionando!**
 
-- ✅ **Auth Service** - 100% Funcional e Testado
-- ✅ **139 testes passando** (100% success rate)
-- ✅ **6 endpoints** de autenticação implementados
-- ✅ **JWT Authentication** com Redis blacklist
-- ✅ **Clean Architecture** completa
-- ✅ **Documentação** completa (API-DOCS.md, Postman Collection)
-- ✅ **Production Ready** 🚀
+### ✅ Sprint 1-5 Concluídas
 
-**Próximo:** Sprint 2 - RBAC & Email Verification
+| Serviço | Status | Progresso | Endpoints |
+|---------|--------|-----------|-----------|
+| **Auth Service** | 🟢 Production Ready | 100% | 6 |
+| **Inventory Service** | 🟢 Production Ready | 100% | 14 |
+| **Sales Service** | 🟢 Production Ready | 98% | 9 |
+
+### 📊 Estatísticas Gerais
+
+- ✅ **29 endpoints RESTful** implementados e testados
+- ✅ **3 bancos PostgreSQL** independentes
+- ✅ **JWT Authentication** integrado entre serviços
+- ✅ **Clean Architecture + DDD** em todos os serviços
+- ✅ **Docker Compose** completo e funcional
+- ✅ **Documentação completa** (API-DOCS.md + Postman)
+- ✅ **Integração Sales ↔ Inventory** via HTTP
+- 🚀 **Production Ready**
+
+**Próximo:** Sprint 6 - Notification Service / Financial Service
 
 ---
 
@@ -68,15 +79,85 @@ Este projeto implementa um sistema ERP completo para gerenciamento de vendas, es
 
 ---
 
-### 2. ⏳ **Inventory Service** - Gestão de Produtos e Estoque
+### 2. ✅ **Inventory Service** - Gestão de Produtos e Estoque
 
-**Status:** 🔴 Não iniciado (Sprint 3-4)
+**Status:** 🟢 Sprint 3-4 Completo (Production Ready)
+
+**Endpoints:**
+- `GET /api/v1/products` - Listar produtos
+- `POST /api/v1/products` - Criar produto 🔒
+- `GET /api/v1/products/{id}` - Buscar produto
+- `PUT /api/v1/products/{id}` - Atualizar produto 🔒
+- `DELETE /api/v1/products/{id}` - Deletar produto 🔒
+- `GET /api/v1/categories` - Listar categorias
+- `POST /api/v1/categories` - Criar categoria 🔒
+- `GET /api/v1/categories/{id}` - Buscar categoria
+- `PUT /api/v1/categories/{id}` - Atualizar categoria 🔒
+- `DELETE /api/v1/categories/{id}` - Deletar categoria 🔒
+- `GET /api/v1/stock/product/{id}` - Consultar estoque
+- `POST /api/v1/stock/product/{id}/increase` - Adicionar estoque 🔒
+- `POST /api/v1/stock/product/{id}/decrease` - Baixar estoque 🔒
+- `GET /api/v1/stock/low-stock` - Produtos com estoque baixo
+- `GET /api/v1/stock/depleted` - Produtos sem estoque
+
+🔒 = Requer autenticação JWT
+
+**Features:**
+- Gerenciamento de Produtos (CRUD completo)
+- Gerenciamento de Categorias (CRUD completo)
+- Controle de Estoque (entrada, saída, ajustes)
+- Alertas de estoque baixo/zerado
+- SKU único por produto
+- Stock movements tracking
+- JWT Authentication integrado
+- Clean Architecture + DDD
+- 14 endpoints RESTful
+
+**Documentação:**
+- [API Documentation](services/inventory-service/API-DOCS.md)
+- [Integration Examples](services/inventory-service/INTEGRATION-EXAMPLES.md)
+- [Postman Collection](services/inventory-service/postman-collection.json)
+
+**Base URL:** http://localhost:9002/api
 
 ---
 
-### 3. ⏳ **Sales Service** - Gestão de Vendas e Pedidos
+### 3. ✅ **Sales Service** - Gestão de Vendas e Pedidos
 
-**Status:** 🔴 Não iniciado (Sprint 5-6)
+**Status:** 🟢 Sprint 5 Completo (Production Ready)
+
+**Endpoints:**
+- `GET /api/v1/customers` - Listar clientes 🔒
+- `POST /api/v1/customers` - Criar cliente 🔒
+- `GET /api/v1/customers/{id}` - Buscar cliente 🔒
+- `GET /api/v1/orders` - Listar pedidos 🔒
+- `POST /api/v1/orders` - Criar pedido 🔒
+- `GET /api/v1/orders/{id}` - Buscar pedido 🔒
+- `POST /api/v1/orders/{id}/items` - Adicionar item 🔒
+- `POST /api/v1/orders/{id}/confirm` - Confirmar pedido 🔒
+- `POST /api/v1/orders/{id}/cancel` - Cancelar pedido 🔒
+
+🔒 = Requer autenticação JWT
+
+**Features:**
+- Gerenciamento de Clientes (CRUD)
+- Gerenciamento de Pedidos (CRUD)
+- CPF/CNPJ validation (dígitos verificadores)
+- OrderNumber auto-gerado (ORD-YYYY-NNNN)
+- Workflow de pedidos (draft → confirmed → processing → delivered)
+- Integração com Inventory Service (HTTP)
+- Cálculo automático de totais
+- Status de pagamento
+- Histórico de pedidos
+- JWT Authentication integrado
+- Clean Architecture + DDD
+- 9 endpoints RESTful
+
+**Documentação:**
+- [API Documentation](services/sales-service/API-DOCS.md)
+- [Postman Collection](services/sales-service/postman-collection.json)
+
+**Base URL:** http://localhost:9003/api
 
 ---
 
@@ -233,35 +314,38 @@ microservices/
 ./scripts/clean.sh
 ```
 
-## 📊 Status do Projeto
+## 🗺️ Roadmap e Progresso
 
-### Sprint 0: Configuração de Infraestrutura ✅
+### ✅ Sprints Concluídas
 
-**Status:** 🟡 Em Andamento
+| Sprint | Serviço | Status | Progresso |
+|--------|---------|--------|-----------|
+| **Sprint 0** | Infraestrutura | ✅ Completo | 100% |
+| **Sprint 1-2** | Auth Service | ✅ Completo | 100% |
+| **Sprint 3-4** | Inventory Service | ✅ Completo | 100% |
+| **Sprint 5** | Sales Service | ✅ Completo | 98% |
 
-Ver detalhes em: [SPRINT0.md](./SPRINT0.md)
+### 🎯 Destaques do Progresso
 
-- [x] Docker Compose configurado
-- [x] RabbitMQ configurado
-- [x] PostgreSQL configurado
-- [x] Redis configurado
-- [x] Kong Gateway configurado
-- [x] Monitoring Stack configurado
-- [ ] Testes completos
-- [ ] Documentação finalizada
+- ✅ **3 microserviços** implementados e funcionando
+- ✅ **29 endpoints RESTful** documentados
+- ✅ **Clean Architecture + DDD** em todos os serviços
+- ✅ **JWT Authentication** integrado
+- ✅ **Docker Compose** completo
+- ✅ **Documentação completa** (API-DOCS + Postman)
+- ✅ **Integração HTTP** entre serviços (Sales ↔ Inventory)
 
-### Próximas Sprints
+### 📅 Próximas Sprints
 
-- **Sprint 1-2:** Auth Service (4 semanas)
-- **Sprint 3-4:** Inventory Service (4 semanas)
-- **Sprint 5-6:** Sales Service (4 semanas)
-- **Sprint 7-8:** Financial Service (4 semanas)
-- **Sprint 9-10:** Logistics Service (4 semanas)
-- **Sprint 11:** Notification Service (2 semanas)
-- **Sprint 12:** API Gateway (2 semanas)
-- **Sprint 13-14:** Integração e Deploy (4 semanas)
+| Sprint | Serviço | Status | Estimativa |
+|--------|---------|--------|------------|
+| **Sprint 6-7** | Financial Service | 🔴 Pendente | 4 semanas |
+| **Sprint 8-9** | Logistics Service | 🔴 Pendente | 4 semanas |
+| **Sprint 10** | Notification Service | 🔴 Pendente | 2 semanas |
+| **Sprint 11** | API Gateway (Kong) | 🔴 Pendente | 2 semanas |
+| **Sprint 12** | Integração & Deploy | 🔴 Pendente | 4 semanas |
 
-**Total:** ~28 semanas (7 meses)
+**Tempo estimado restante:** ~16 semanas (4 meses)
 
 ## 🧪 Testes
 
