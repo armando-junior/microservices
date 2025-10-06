@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Src\Domain\Repositories\ProductRepositoryInterface;
-use Src\Domain\Repositories\CategoryRepositoryInterface;
-use Src\Domain\Repositories\StockRepositoryInterface;
-use Src\Infrastructure\Persistence\EloquentProductRepository;
-use Src\Infrastructure\Persistence\EloquentCategoryRepository;
-use Src\Infrastructure\Persistence\EloquentStockRepository;
+use Src\Domain\Repositories\CustomerRepositoryInterface;
+use Src\Domain\Repositories\OrderRepositoryInterface;
+use Src\Infrastructure\Persistence\EloquentCustomerRepository;
+use Src\Infrastructure\Persistence\EloquentOrderRepository;
 
 /**
  * Domain Service Provider
@@ -27,18 +25,13 @@ class DomainServiceProvider extends ServiceProvider
     {
         // Repository bindings
         $this->app->bind(
-            ProductRepositoryInterface::class,
-            EloquentProductRepository::class
+            CustomerRepositoryInterface::class,
+            EloquentCustomerRepository::class
         );
 
         $this->app->bind(
-            CategoryRepositoryInterface::class,
-            EloquentCategoryRepository::class
-        );
-
-        $this->app->bind(
-            StockRepositoryInterface::class,
-            EloquentStockRepository::class
+            OrderRepositoryInterface::class,
+            EloquentOrderRepository::class
         );
     }
 
