@@ -13,6 +13,10 @@ use Src\Application\UseCases\Product\CreateProduct\CreateProductDTO;
 use Src\Application\UseCases\Product\CreateProduct\CreateProductUseCase;
 use Src\Application\UseCases\Product\GetProduct\GetProductUseCase;
 use Src\Application\UseCases\Product\ListProducts\ListProductsUseCase;
+use Src\Application\UseCases\Product\UpdateProduct\UpdateProductDTO;
+use Src\Application\UseCases\Product\UpdateProduct\UpdateProductUseCase;
+use Src\Application\UseCases\Product\DeleteProduct\DeleteProductUseCase;
+use Src\Application\Exceptions\CategoryNotFoundException;
 use Src\Application\Exceptions\ProductNotFoundException;
 use Src\Application\Exceptions\SKUAlreadyExistsException;
 
@@ -93,23 +97,60 @@ class ProductController extends Controller
     /**
      * Atualiza um produto
      */
-    public function update(string $id, UpdateProductRequest $request): JsonResponse
+    public function update(string $id, UpdateProductRequest $request, UpdateProductUseCase $useCase): JsonResponse
     {
-        // TODO: Implementar UpdateProductUseCase
-        return response()->json([
-            'message' => 'Update product endpoint - To be implemented',
-        ], 501);
+        try {
+            $dto = new UpdateProductDTO(
+                id: $id,
+                name: $request->input('name'),
+                price: $request->has('price') ? (float) $request->input('price') : null,
+                categoryId: $request->input('category_id'),
+                barcode: $request->input('barcode'),
+                description: $request->input('description'),
+                status: $request->input('status')
+            );
+
+            $product = $useCase->execute($dto);
+
+            return response()->json([
+                'message' => 'Product updated successfully',
+                'data' => new ProductResource($product),
+            ]);
+        } catch (ProductNotFoundException $e) {
+            return response()->json([
+                'error' => 'ProductNotFound',
+                'message' => $e->getMessage(),
+            ], 404);
+        } catch (CategoryNotFoundException $e) {
+            return response()->json([
+                'error' => 'CategoryNotFound',
+                'message' => $e->getMessage(),
+            ], 404);
+        }
     }
 
     /**
      * Deleta um produto
      */
-    public function destroy(string $id): JsonResponse
+    public function destroy(string $id, DeleteProductUseCase $useCase): JsonResponse
     {
-        // TODO: Implementar DeleteProductUseCase
-        return response()->json([
-            'message' => 'Delete product endpoint - To be implemented',
-        ], 501);
+        try {
+            $useCase->execute($id);
+
+            return response()->json([
+                'message' => 'Product deleted successfully',
+            ], 200);
+        } catch (ProductNotFoundException $e) {
+            return response()->json([
+                'error' => 'ProductNotFound',
+                'message' => $e->getMessage(),
+            ], 404);
+        } catch (\DomainException $e) {
+            return response()->json([
+                'error' => 'ProductHasStock',
+                'message' => $e->getMessage(),
+            ], 409);
+        }
     }
 }
 

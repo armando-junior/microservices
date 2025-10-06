@@ -5,11 +5,17 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CreateCategoryRequest;
+use App\Http\Requests\UpdateCategoryRequest;
 use App\Http\Resources\CategoryResource;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Src\Application\UseCases\Category\CreateCategory\CreateCategoryDTO;
 use Src\Application\UseCases\Category\CreateCategory\CreateCategoryUseCase;
 use Src\Application\UseCases\Category\GetCategory\GetCategoryUseCase;
+use Src\Application\UseCases\Category\ListCategories\ListCategoriesUseCase;
+use Src\Application\UseCases\Category\UpdateCategory\UpdateCategoryDTO;
+use Src\Application\UseCases\Category\UpdateCategory\UpdateCategoryUseCase;
+use Src\Application\UseCases\Category\DeleteCategory\DeleteCategoryUseCase;
 use Src\Application\Exceptions\CategoryNotFoundException;
 
 /**
@@ -20,12 +26,15 @@ class CategoryController extends Controller
     /**
      * Lista categorias
      */
-    public function index(): JsonResponse
+    public function index(Request $request, ListCategoriesUseCase $useCase): JsonResponse
     {
-        // TODO: Implementar ListCategoriesUseCase
+        $categories = $useCase->execute([
+            'status' => $request->query('status'),
+        ]);
+
         return response()->json([
-            'message' => 'List categories endpoint - To be implemented',
-        ], 501);
+            'data' => CategoryResource::collection($categories),
+        ]);
     }
 
     /**
@@ -68,23 +77,52 @@ class CategoryController extends Controller
     /**
      * Atualiza uma categoria
      */
-    public function update(string $id): JsonResponse
+    public function update(string $id, UpdateCategoryRequest $request, UpdateCategoryUseCase $useCase): JsonResponse
     {
-        // TODO: Implementar UpdateCategoryUseCase
-        return response()->json([
-            'message' => 'Update category endpoint - To be implemented',
-        ], 501);
+        try {
+            $dto = new UpdateCategoryDTO(
+                id: $id,
+                name: $request->input('name'),
+                description: $request->input('description'),
+                status: $request->input('status')
+            );
+
+            $category = $useCase->execute($dto);
+
+            return response()->json([
+                'message' => 'Category updated successfully',
+                'data' => new CategoryResource($category),
+            ]);
+        } catch (CategoryNotFoundException $e) {
+            return response()->json([
+                'error' => 'CategoryNotFound',
+                'message' => $e->getMessage(),
+            ], 404);
+        }
     }
 
     /**
      * Deleta uma categoria
      */
-    public function destroy(string $id): JsonResponse
+    public function destroy(string $id, DeleteCategoryUseCase $useCase): JsonResponse
     {
-        // TODO: Implementar DeleteCategoryUseCase
-        return response()->json([
-            'message' => 'Delete category endpoint - To be implemented',
-        ], 501);
+        try {
+            $useCase->execute($id);
+
+            return response()->json([
+                'message' => 'Category deleted successfully',
+            ], 200);
+        } catch (CategoryNotFoundException $e) {
+            return response()->json([
+                'error' => 'CategoryNotFound',
+                'message' => $e->getMessage(),
+            ], 404);
+        } catch (\DomainException $e) {
+            return response()->json([
+                'error' => 'CategoryHasProducts',
+                'message' => $e->getMessage(),
+            ], 409);
+        }
     }
 }
 

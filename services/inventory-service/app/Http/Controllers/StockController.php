@@ -12,6 +12,8 @@ use Src\Application\UseCases\Stock\IncreaseStock\IncreaseStockDTO;
 use Src\Application\UseCases\Stock\IncreaseStock\IncreaseStockUseCase;
 use Src\Application\UseCases\Stock\DecreaseStock\DecreaseStockDTO;
 use Src\Application\UseCases\Stock\DecreaseStock\DecreaseStockUseCase;
+use Src\Application\UseCases\Stock\GetLowStock\GetLowStockUseCase;
+use Src\Application\UseCases\Stock\GetDepletedStock\GetDepletedStockUseCase;
 use Src\Application\Exceptions\StockNotFoundException;
 use Src\Domain\Exceptions\InsufficientStockException;
 
@@ -101,23 +103,31 @@ class StockController extends Controller
     /**
      * Lista produtos com estoque baixo
      */
-    public function lowStock(): JsonResponse
+    public function lowStock(GetLowStockUseCase $useCase): JsonResponse
     {
-        // TODO: Implementar GetLowStockUseCase
+        $stocks = $useCase->execute();
+
         return response()->json([
-            'message' => 'Low stock endpoint - To be implemented',
-        ], 501);
+            'data' => StockResource::collection($stocks),
+            'meta' => [
+                'total' => count($stocks),
+            ],
+        ]);
     }
 
     /**
      * Lista produtos esgotados
      */
-    public function depleted(): JsonResponse
+    public function depleted(GetDepletedStockUseCase $useCase): JsonResponse
     {
-        // TODO: Implementar GetDepletedStockUseCase
+        $stocks = $useCase->execute();
+
         return response()->json([
-            'message' => 'Depleted stock endpoint - To be implemented',
-        ], 501);
+            'data' => StockResource::collection($stocks),
+            'meta' => [
+                'total' => count($stocks),
+            ],
+        ]);
     }
 }
 
