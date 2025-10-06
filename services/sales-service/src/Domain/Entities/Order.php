@@ -295,13 +295,16 @@ final class Order
     private function recalculateTotals(): void
     {
         $subtotal = Money::zero();
+        $discount = Money::zero();
 
         foreach ($this->items as $item) {
-            $subtotal = $subtotal->add($item->getTotal());
+            $subtotal = $subtotal->add($item->getSubtotal());
+            $discount = $discount->add($item->getDiscount());
         }
 
         $this->subtotal = $subtotal;
-        $this->total = $subtotal->subtract($this->discount);
+        $this->discount = $discount;
+        $this->total = $subtotal->subtract($discount);
     }
 
     /**
