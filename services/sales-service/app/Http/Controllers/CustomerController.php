@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Src\Application\UseCases\Customer\CreateCustomer\CreateCustomerDTO;
 use Src\Application\UseCases\Customer\CreateCustomer\CreateCustomerUseCase;
 use Src\Application\UseCases\Customer\GetCustomer\GetCustomerUseCase;
+use Src\Application\UseCases\Customer\ListCustomers\ListCustomersUseCase;
 use Src\Application\Exceptions\CustomerNotFoundException;
 use Src\Application\Exceptions\EmailAlreadyExistsException;
 use Src\Application\Exceptions\DocumentAlreadyExistsException;
@@ -20,6 +21,36 @@ use Src\Application\Exceptions\DocumentAlreadyExistsException;
  */
 class CustomerController extends Controller
 {
+    /**
+     * Lista clientes
+     */
+    public function index(Request $request, ListCustomersUseCase $useCase): JsonResponse
+    {
+        $filters = [];
+        if ($request->has('status')) {
+            $filters['status'] = $request->input('status');
+        }
+        if ($request->has('search')) {
+            $filters['search'] = $request->input('search');
+        }
+
+        $page = (int) $request->input('page', 1);
+        $perPage = (int) $request->input('per_page', 15);
+
+        $customers = $useCase->execute($filters, $page, $perPage);
+        $total = $useCase->count($filters);
+
+        return response()->json([
+            'data' => CustomerResource::collection($customers),
+            'meta' => [
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'last_page' => (int) ceil($total / $perPage),
+            ],
+        ]);
+    }
+
     /**
      * Cria um novo cliente
      */
