@@ -8,18 +8,19 @@ use Src\Application\DTOs\OrderDTO;
 use Src\Application\Exceptions\OrderNotFoundException;
 use Src\Domain\Repositories\OrderRepositoryInterface;
 use Src\Domain\ValueObjects\OrderId;
+use Src\Infrastructure\Messaging\RabbitMQEventPublisher;
 
 /**
  * Confirm Order Use Case
  * 
  * Confirma um pedido, mudando seu status de 'draft' para 'pending'.
- * Futuramente, aqui será enviada uma mensagem via RabbitMQ para
- * reservar o estoque no Inventory Service.
+ * Publica evento via RabbitMQ para reservar estoque no Inventory Service.
  */
 final class ConfirmOrderUseCase
 {
     public function __construct(
-        private readonly OrderRepositoryInterface $orderRepository
+        private readonly OrderRepositoryInterface $orderRepository,
+        private readonly RabbitMQEventPublisher $eventPublisher
     ) {
     }
 
@@ -42,8 +43,9 @@ final class ConfirmOrderUseCase
         // 3. Persistir
         $this->orderRepository->save($order);
 
-        // 4. Publicar evento (RabbitMQ) - TODO: implementar
-        // $this->eventPublisher->publish('OrderConfirmed', $order->pullDomainEvents());
+        // 4. Publicar evento no RabbitMQ
+        $domainEvents = $order->pullDomainEvents();
+        $this->eventPublisher->publishAll($domainEvents);
 
         // 5. Retornar DTO
         return OrderDTO::fromEntity($order);

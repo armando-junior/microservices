@@ -8,6 +8,7 @@ use Src\Application\DTOs\OrderDTO;
 use Src\Application\Exceptions\OrderNotFoundException;
 use Src\Domain\Repositories\OrderRepositoryInterface;
 use Src\Domain\ValueObjects\OrderId;
+use Src\Infrastructure\Messaging\RabbitMQEventPublisher;
 
 /**
  * Cancel Order Use Case
@@ -17,7 +18,8 @@ use Src\Domain\ValueObjects\OrderId;
 final class CancelOrderUseCase
 {
     public function __construct(
-        private readonly OrderRepositoryInterface $orderRepository
+        private readonly OrderRepositoryInterface $orderRepository,
+        private readonly RabbitMQEventPublisher $eventPublisher
     ) {
     }
 
@@ -41,8 +43,9 @@ final class CancelOrderUseCase
         // 3. Persistir
         $this->orderRepository->save($order);
 
-        // 4. Publicar evento para liberar estoque (RabbitMQ) - TODO: implementar
-        // $this->eventPublisher->publish('OrderCancelled', $order->pullDomainEvents());
+        // 4. Publicar evento para liberar estoque no RabbitMQ
+        $domainEvents = $order->pullDomainEvents();
+        $this->eventPublisher->publishAll($domainEvents);
 
         // 5. Retornar DTO
         return OrderDTO::fromEntity($order);

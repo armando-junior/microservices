@@ -9,6 +9,7 @@ use Src\Domain\Repositories\CustomerRepositoryInterface;
 use Src\Domain\Repositories\OrderRepositoryInterface;
 use Src\Infrastructure\Persistence\EloquentCustomerRepository;
 use Src\Infrastructure\Persistence\EloquentOrderRepository;
+use Src\Infrastructure\Messaging\RabbitMQEventPublisher;
 
 /**
  * Domain Service Provider
@@ -32,6 +33,14 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(
             OrderRepositoryInterface::class,
             EloquentOrderRepository::class
+        );
+
+        // Event Publisher (RabbitMQ)
+        $this->app->singleton(
+            RabbitMQEventPublisher::class,
+            function ($app) {
+                return new RabbitMQEventPublisher();
+            }
         );
     }
 
