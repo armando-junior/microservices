@@ -118,7 +118,7 @@ final class EloquentProductRepository implements ProductRepositoryInterface
      */
     private function toDomainEntity(ProductModel $model): Product
     {
-        $product = new Product(
+        return Product::reconstitute(
             id: ProductId::fromString($model->id),
             name: ProductName::fromString($model->name),
             sku: SKU::fromString($model->sku),
@@ -130,8 +130,6 @@ final class EloquentProductRepository implements ProductRepositoryInterface
             createdAt: \DateTimeImmutable::createFromMutable($model->created_at),
             updatedAt: $model->updated_at ? \DateTimeImmutable::createFromMutable($model->updated_at) : null
         );
-
-        return $product;
     }
 }
 

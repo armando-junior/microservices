@@ -55,6 +55,14 @@ final class EloquentStockRepository implements StockRepositoryInterface
     }
 
     /**
+     * Verifica se existe estoque para o produto
+     */
+    public function existsForProduct(ProductId $productId): bool
+    {
+        return StockModel::where('product_id', $productId->value())->exists();
+    }
+
+    /**
      * Lista produtos com estoque baixo
      */
     public function findLowStock(): array
@@ -88,24 +96,33 @@ final class EloquentStockRepository implements StockRepositoryInterface
         }
 
         foreach ($movements as $movement) {
+            // Mapeia o tipo do domínio para o banco
+            $typeMap = [
+                'IN' => 'increase',
+                'OUT' => 'decrease',
+                'ADJUSTMENT' => 'adjustment',
+            ];
+            
+            $type = $typeMap[$movement['type']] ?? strtolower($movement['type']);
+
             StockMovementModel::create([
-                'id' => $movement['id'],
+                'id' => \Illuminate\Support\Str::uuid()->toString(),
                 'stock_id' => $stock->id,
-                'type' => $movement['type'],
+                'type' => $type,
                 'quantity' => $movement['quantity'],
-                'previous_quantity' => $movement['previous_quantity'],
-                'new_quantity' => $movement['new_quantity'],
+                'previous_quantity' => $movement['quantity_before'],
+                'new_quantity' => $movement['quantity_after'],
                 'reason' => $movement['reason'],
                 'reference_id' => $movement['reference_id'] ?? null,
-                'created_at' => $movement['created_at'],
+                'created_at' => $movement['occurred_at'],
             ]);
         }
     }
 
     /**
-     * Busca movimentações de um produto
+     * Busca movimentações de um produto com paginação
      */
-    public function getMovements(ProductId $productId, int $limit = 50): array
+    public function findMovements(ProductId $productId, int $page = 1, int $perPage = 50): array
     {
         $stock = StockModel::where('product_id', $productId->value())->first();
         
@@ -115,7 +132,8 @@ final class EloquentStockRepository implements StockRepositoryInterface
 
         return StockMovementModel::where('stock_id', $stock->id)
             ->orderBy('created_at', 'desc')
-            ->limit($limit)
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
             ->get()
             ->toArray();
     }
@@ -133,7 +151,7 @@ final class EloquentStockRepository implements StockRepositoryInterface
      */
     private function toDomainEntity(StockModel $model): Stock
     {
-        return new Stock(
+        return Stock::reconstitute(
             id: StockId::fromString($model->id),
             productId: ProductId::fromString($model->product_id),
             quantity: Quantity::fromInt($model->quantity),

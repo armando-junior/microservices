@@ -99,7 +99,7 @@ final class EloquentCategoryRepository implements CategoryRepositoryInterface
      */
     private function toDomainEntity(CategoryModel $model): Category
     {
-        return new Category(
+        return Category::reconstitute(
             id: CategoryId::fromString($model->id),
             name: CategoryName::fromString($model->name),
             slug: $model->slug,
