@@ -1,8 +1,8 @@
 # 📦 Inventory Service - API Documentation
 
-**Version:** 1.0.0 (Sprint 3-4 Complete)  
+**Version:** 1.0.0 (Sprint 3-4 Complete + JWT Integration)  
 **Base URL:** `http://localhost:9002/api`  
-**Authentication:** JWT Bearer Token (coming soon)  
+**Authentication:** ✅ JWT Bearer Token (Required for write operations)  
 **Status:** ✅ Production Ready
 
 ---
@@ -10,12 +10,13 @@
 ## 📋 Table of Contents
 
 1. [Overview](#overview)
-2. [Category Endpoints](#category-endpoints) (5 endpoints)
-3. [Product Endpoints](#product-endpoints) (5 endpoints)
-4. [Stock Endpoints](#stock-endpoints) (5 endpoints)
-5. [Error Responses](#error-responses)
-6. [Business Rules](#business-rules)
-7. [Request Examples](#request-examples)
+2. [Authentication](#authentication) ⭐ NEW
+3. [Category Endpoints](#category-endpoints) (5 endpoints)
+4. [Product Endpoints](#product-endpoints) (5 endpoints)
+5. [Stock Endpoints](#stock-endpoints) (5 endpoints)
+6. [Error Responses](#error-responses)
+7. [Business Rules](#business-rules)
+8. [Request Examples](#request-examples)
 
 ---
 
@@ -53,6 +54,92 @@ The Inventory Service manages products, categories, and stock control for the ER
 
 ---
 
+## 🔐 Authentication
+
+The Inventory Service uses **JWT (JSON Web Token)** for authentication, integrated with the Auth Service.
+
+### Authentication Rules
+
+- **Public Endpoints** (No authentication required):
+  - `GET` operations: List categories, products, view stock
+  - Health check endpoint
+  
+- **Protected Endpoints** (JWT required):
+  - `POST`, `PUT`, `PATCH`, `DELETE` operations
+  - Creating, updating, deleting categories/products
+  - Stock increase/decrease operations
+
+### How to Authenticate
+
+#### Step 1: Get a JWT Token from Auth Service
+
+```bash
+# Register a new user (if needed)
+curl -X POST http://localhost:9001/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"John Doe","email":"john@example.com","password":"SecurePass@123"}'
+
+# Login to get token
+curl -X POST http://localhost:9001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"john@example.com","password":"SecurePass@123"}'
+
+# Response:
+{
+  "data": {
+    "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+    "token_type": "bearer",
+    "expires_in": 3600
+  }
+}
+```
+
+#### Step 2: Use Token in Inventory Service Requests
+
+Include the JWT token in the `Authorization` header with the `Bearer` prefix:
+
+```bash
+curl -X POST http://localhost:9002/api/v1/products \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..." \
+  -d '{"name":"Laptop","sku":"LAPTOP-001","price":999.99}'
+```
+
+### Authentication Error Responses
+
+**401 Unauthorized** - Token not provided
+```json
+{
+  "error": "Unauthorized",
+  "message": "Token not provided"
+}
+```
+
+**401 Unauthorized** - Token expired
+```json
+{
+  "error": "TokenExpired",
+  "message": "Token has expired"
+}
+```
+
+**401 Unauthorized** - Invalid token
+```json
+{
+  "error": "InvalidToken",
+  "message": "Token signature is invalid"
+}
+```
+
+### Token Validation
+
+- The Inventory Service validates tokens using the **same secret** as Auth Service
+- Tokens are validated on every protected endpoint request
+- Expired or invalid tokens are rejected with 401 status
+- No need for database lookup - validation is stateless
+
+---
+
 ## 📂 Category Endpoints
 
 ### 1. Create Category
@@ -60,7 +147,7 @@ The Inventory Service manages products, categories, and stock control for the ER
 Create a new product category.
 
 **Endpoint:** `POST /api/v1/categories`  
-**Authentication:** Not required (coming soon)
+**Authentication:** ✅ **Required** (JWT Bearer Token)
 
 #### Request Body
 
@@ -115,7 +202,7 @@ Create a new product category.
 Retrieve a category by ID.
 
 **Endpoint:** `GET /api/v1/categories/{id}`  
-**Authentication:** Not required
+**Authentication:** Not required (Public endpoint)
 
 #### Success Response (200 OK)
 
@@ -151,7 +238,7 @@ Retrieve a category by ID.
 Retrieve all categories.
 
 **Endpoint:** `GET /api/v1/categories`  
-**Authentication:** Not required
+**Authentication:** Not required (Public endpoint)
 
 #### Query Parameters
 
@@ -184,7 +271,7 @@ Retrieve all categories.
 Update an existing category.
 
 **Endpoint:** `PUT /api/v1/categories/{id}` or `PATCH /api/v1/categories/{id}`  
-**Authentication:** Not required (coming soon)
+**Authentication:** ✅ **Required** (JWT Bearer Token)
 
 #### Request Body
 
@@ -252,7 +339,7 @@ All fields are optional. Only send the fields you want to update.
 Delete a category. Cannot delete if there are products associated with it.
 
 **Endpoint:** `DELETE /api/v1/categories/{id}`  
-**Authentication:** Not required (coming soon)
+**Authentication:** ✅ **Required** (JWT Bearer Token)
 
 #### Success Response (200 OK)
 
@@ -291,7 +378,7 @@ Delete a category. Cannot delete if there are products associated with it.
 Create a new product in the catalog.
 
 **Endpoint:** `POST /api/v1/products`  
-**Authentication:** Not required (coming soon)
+**Authentication:** ✅ **Required** (JWT Bearer Token)
 
 #### Request Body
 
@@ -366,7 +453,7 @@ Create a new product in the catalog.
 Retrieve a product by ID.
 
 **Endpoint:** `GET /api/v1/products/{id}`  
-**Authentication:** Not required
+**Authentication:** Not required (Public endpoint)
 
 #### Success Response (200 OK)
 
@@ -405,7 +492,7 @@ Retrieve a product by ID.
 Retrieve products with optional filtering and pagination.
 
 **Endpoint:** `GET /api/v1/products`  
-**Authentication:** Not required
+**Authentication:** Not required (Public endpoint)
 
 #### Query Parameters
 
@@ -448,7 +535,7 @@ Retrieve products with optional filtering and pagination.
 Update an existing product. SKU cannot be changed after creation.
 
 **Endpoint:** `PUT /api/v1/products/{id}` or `PATCH /api/v1/products/{id}`  
-**Authentication:** Not required (coming soon)
+**Authentication:** ✅ **Required** (JWT Bearer Token)
 
 #### Request Body
 
@@ -536,7 +623,7 @@ All fields are optional. Only send the fields you want to update.
 Delete a product. Cannot delete if there is stock available.
 
 **Endpoint:** `DELETE /api/v1/products/{id}`  
-**Authentication:** Not required (coming soon)
+**Authentication:** ✅ **Required** (JWT Bearer Token)
 
 #### Success Response (200 OK)
 
@@ -577,7 +664,7 @@ Delete a product. Cannot delete if there is stock available.
 Retrieve stock information for a product.
 
 **Endpoint:** `GET /api/v1/stock/product/{productId}`  
-**Authentication:** Not required
+**Authentication:** Not required (Public endpoint)
 
 #### Success Response (200 OK)
 
@@ -616,7 +703,7 @@ Retrieve stock information for a product.
 Add quantity to stock (purchase, return, adjustment).
 
 **Endpoint:** `POST /api/v1/stock/product/{productId}/increase`  
-**Authentication:** Not required (coming soon)
+**Authentication:** ✅ **Required** (JWT Bearer Token)
 
 #### Request Body
 
@@ -686,7 +773,7 @@ Add quantity to stock (purchase, return, adjustment).
 Remove quantity from stock (sale, damage, loss).
 
 **Endpoint:** `POST /api/v1/stock/product/{productId}/decrease`  
-**Authentication:** Not required (coming soon)
+**Authentication:** ✅ **Required** (JWT Bearer Token)
 
 #### Request Body
 
@@ -749,7 +836,7 @@ Same as Increase Stock.
 Retrieve all products with stock quantity below the minimum threshold.
 
 **Endpoint:** `GET /api/v1/stock/low-stock`  
-**Authentication:** Not required (coming soon)
+**Authentication:** ✅ **Required** (JWT Bearer Token)
 
 #### Success Response (200 OK)
 
@@ -796,7 +883,7 @@ Retrieve all products with stock quantity below the minimum threshold.
 Retrieve all products with zero stock.
 
 **Endpoint:** `GET /api/v1/stock/depleted`  
-**Authentication:** Not required (coming soon)
+**Authentication:** ✅ **Required** (JWT Bearer Token)
 
 #### Success Response (200 OK)
 

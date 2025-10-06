@@ -1,41 +1,44 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | JWT Secret Key
     |--------------------------------------------------------------------------
     |
-    | Chave secreta usada para assinar os tokens JWT.
-    | IMPORTANTE: Gere uma chave forte em produção!
+    | This key is used to sign and verify JWT tokens. It must match the
+    | key used by the Auth Service.
     |
     */
-
-    'secret' => env('JWT_SECRET', 'your-secret-key-change-this-in-production'),
+    'secret' => env('JWT_SECRET', 'your-secret-key'),
 
     /*
     |--------------------------------------------------------------------------
-    | JWT Time to Live (TTL)
+    | JWT Algorithm
     |--------------------------------------------------------------------------
     |
-    | Tempo de vida do token em segundos.
-    | Padrão: 3600 segundos (1 hora)
+    | The algorithm used to sign the token. Default is HS256.
     |
     */
-
-    'ttl' => env('JWT_TTL', 3600),
+    'algorithm' => env('JWT_ALGORITHM', 'HS256'),
 
     /*
     |--------------------------------------------------------------------------
-    | JWT Issuer
+    | JWT TTL (Time To Live)
     |--------------------------------------------------------------------------
     |
-    | Identificador do emissor do token.
+    | The time (in minutes) that the token will be valid for.
     |
     */
+    'ttl' => env('JWT_TTL', 60),
 
-    'issuer' => env('JWT_ISSUER', 'auth-service'),
-
+    /*
+    |--------------------------------------------------------------------------
+    | JWT Refresh TTL
+    |--------------------------------------------------------------------------
+    |
+    | The time (in minutes) that the refresh token will be valid for.
+    |
+    */
+    'refresh_ttl' => env('JWT_REFRESH_TTL', 20160), // 2 weeks
 ];
-
