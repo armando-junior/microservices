@@ -41,11 +41,12 @@ final class OrderItem
         string $productName,
         string $sku,
         Quantity $quantity,
-        Money $unitPrice
+        Money $unitPrice,
+        ?Money $discount = null
     ): self {
         $subtotal = $unitPrice->multiply((float) $quantity->value());
-        $discount = Money::zero();
-        $total = $subtotal;
+        $discount = $discount ?? Money::zero();
+        $total = $subtotal->subtract($discount);
 
         return new self(
             id: $id,

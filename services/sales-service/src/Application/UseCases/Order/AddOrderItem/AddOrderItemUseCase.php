@@ -44,21 +44,24 @@ final class AddOrderItemUseCase
         // 2. Buscar informações do produto no Inventory Service
         $productData = $this->fetchProductFromInventory($dto->productId);
 
-        // 3. Adicionar item ao pedido
-        $order->addItem(
-            orderItemId: OrderItemId::generate(),
-            productId: ProductId::fromString($dto->productId),
+        // 3. Criar OrderItem
+        $orderItem = \Src\Domain\Entities\OrderItem::create(
+            id: OrderItemId::generate(),
+            productId: $dto->productId, // Pass string directly
             productName: $productData['name'],
             sku: $productData['sku'],
             quantity: Quantity::fromInt($dto->quantity),
             unitPrice: Money::fromFloat($productData['price']),
-            discount: $dto->discount ? Money::fromFloat($dto->discount) : Money::fromFloat(0.0)
+            discount: $dto->discount ? Money::fromFloat($dto->discount) : null
         );
 
-        // 4. Persistir pedido
+        // 4. Adicionar item ao pedido
+        $order->addItem($orderItem);
+
+        // 5. Persistir pedido
         $this->orderRepository->save($order);
 
-        // 5. Retornar DTO
+        // 6. Retornar DTO
         return OrderDTO::fromEntity($order);
     }
 
