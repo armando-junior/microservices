@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Inventory Service API - Complete",
-    "description": "Complete API collection for Inventory Service\n\n**Base URL:** http://localhost:9002/api\n**Documentation:** See API-DOCS.md\n\n### Sprint 3 - 100% Complete\n- ✅ Category management (CRUD)\n- ✅ Product catalog with SKU validation\n- ✅ Stock control with movement tracking\n- ✅ Low stock and depletion alerts\n- ✅ 63 tests passing",
+    "description": "Complete API collection for Inventory Service\n\n**Base URL:** http://localhost:9002/api\n**Documentation:** See API-DOCS.md\n**Version:** 1.0.0\n\n### Sprint 3-4 - 100% Complete ✅\n\n**15 Endpoints Total:**\n- ✅ Category management (5 endpoints): Create, Get, List, Update, Delete\n- ✅ Product catalog with SKU validation (5 endpoints): Create, Get, List, Update, Delete\n- ✅ Stock control with movement tracking (5 endpoints): Get, Increase, Decrease, Low Stock, Depleted\n\n**Features:**\n- ✅ Complete CRUD operations\n- ✅ Partial updates supported\n- ✅ Business rules enforcement (cannot delete categories with products, products with stock)\n- ✅ Low stock and depletion monitoring\n- ✅ Automated tests included\n- ✅ 63+ tests passing\n\n**How to Use:**\n1. Run the \"Create Category\" request first\n2. The category_id will be automatically saved\n3. Run \"Create Product\" with the category_id\n4. Test stock operations, updates, and deletions\n5. All requests include automated tests",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "version": "1.0.0"
   },
@@ -183,6 +183,88 @@
             "description": "List all categories with optional status filter"
           },
           "response": []
+        },
+        {
+          "name": "Update Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Category updated successfully\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.eql('Category updated successfully');",
+                  "    pm.expect(jsonData.data).to.have.property('updated_at');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Electronics and Computers\",\n  \"description\": \"Electronic products and computer equipment\",\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/categories/{{category_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "categories", "{{category_id}}"]
+            },
+            "description": "Update an existing category (partial updates supported)"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "    pm.test(\"Category deleted successfully\", function () {",
+                  "        var jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.message).to.eql('Category deleted successfully');",
+                  "    });",
+                  "}",
+                  "",
+                  "if (pm.response.code === 409) {",
+                  "    pm.test(\"Cannot delete category with products\", function () {",
+                  "        var jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.error).to.eql('CategoryHasProducts');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/categories/{{category_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "categories", "{{category_id}}"]
+            },
+            "description": "Delete a category (fails if it has products)"
+          },
+          "response": []
         }
       ]
     },
@@ -321,6 +403,88 @@
               ]
             },
             "description": "List products with pagination and filters"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Product updated successfully\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.eql('Product updated successfully');",
+                  "    pm.expect(jsonData.data).to.have.property('updated_at');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Laptop Dell Inspiron 15 (Updated)\",\n  \"price\": 3299.99,\n  \"description\": \"15.6 inch Full HD, Intel Core i7, 16GB RAM, 512GB SSD\",\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/products/{{product_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "products", "{{product_id}}"]
+            },
+            "description": "Update an existing product (partial updates supported, SKU cannot be changed)"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"Status code is 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "    pm.test(\"Product deleted successfully\", function () {",
+                  "        var jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.message).to.eql('Product deleted successfully');",
+                  "    });",
+                  "}",
+                  "",
+                  "if (pm.response.code === 409) {",
+                  "    pm.test(\"Cannot delete product with stock\", function () {",
+                  "        var jsonData = pm.response.json();",
+                  "        pm.expect(jsonData.error).to.eql('ProductHasStock');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/products/{{product_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "products", "{{product_id}}"]
+            },
+            "description": "Delete a product (fails if it has stock)"
           },
           "response": []
         },
@@ -501,6 +665,83 @@
               "path": ["v1", "stock", "product", "{{product_id}}", "decrease"]
             },
             "description": "Decrease stock quantity (sale, damage, etc.)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Low Stock Products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Low stock list returned\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "    pm.expect(jsonData.meta).to.have.property('total');",
+                  "    ",
+                  "    if (jsonData.data.length > 0) {",
+                  "        pm.expect(jsonData.data[0]).to.have.property('is_low_stock');",
+                  "        pm.expect(jsonData.data[0].is_low_stock).to.be.true;",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/stock/low-stock",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "stock", "low-stock"]
+            },
+            "description": "Get all products with stock below minimum threshold"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Depleted Stock Products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Depleted stock list returned\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "    pm.expect(jsonData.meta).to.have.property('total');",
+                  "    ",
+                  "    if (jsonData.data.length > 0) {",
+                  "        pm.expect(jsonData.data[0]).to.have.property('is_depleted');",
+                  "        pm.expect(jsonData.data[0].is_depleted).to.be.true;",
+                  "        pm.expect(jsonData.data[0].quantity).to.eql(0);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/stock/depleted",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "stock", "depleted"]
+            },
+            "description": "Get all products with zero stock"
           },
           "response": []
         },
