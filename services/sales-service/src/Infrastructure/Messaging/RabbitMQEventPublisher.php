@@ -12,8 +12,10 @@ use Illuminate\Support\Facades\Log;
  * RabbitMQ Event Publisher
  * 
  * Publica eventos de domínio no RabbitMQ.
+ * 
+ * Note: Class is not final to allow mocking in tests
  */
-final class RabbitMQEventPublisher
+class RabbitMQEventPublisher
 {
     private ?AMQPStreamConnection $connection = null;
     private $channel = null;
@@ -65,7 +67,7 @@ final class RabbitMQEventPublisher
                     'timestamp' => now()->toIso8601String(),
                     'service' => 'sales-service',
                 ]),
-                ['delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT]
+                ['delivery_mode' => 2] // 2 = persistent delivery mode
             );
 
             $routingKey = 'sales.' . strtolower($eventName);

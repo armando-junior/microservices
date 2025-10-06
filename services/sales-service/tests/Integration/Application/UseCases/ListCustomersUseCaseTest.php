@@ -56,12 +56,14 @@ class ListCustomersUseCaseTest extends IntegrationTestCase
     /** @test */
     public function it_paginates_customers(): void
     {
-        // Create 5 customers
+        // Create 5 customers with unique CPFs
+        $cpfs = ['11144477735', '52998224725', '06114423256', '36301136039', '44767962038'];
+        
         for ($i = 1; $i <= 5; $i++) {
             $this->createCustomer(
-                "Customer $i",
+                "Customer {$i}",
                 "customer{$i}@example.com",
-                $i === 1 ? '11144477735' : '52998224725'
+                $cpfs[$i - 1]
             );
         }
 

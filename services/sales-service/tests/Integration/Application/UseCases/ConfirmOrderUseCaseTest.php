@@ -22,13 +22,14 @@ use Src\Domain\ValueObjects\OrderId;
 use Src\Domain\ValueObjects\OrderItemId;
 use Src\Domain\ValueObjects\Quantity;
 use Src\Domain\ValueObjects\Money;
+use Mockery;
 
 class ConfirmOrderUseCaseTest extends IntegrationTestCase
 {
     private ConfirmOrderUseCase $useCase;
     private EloquentOrderRepository $orderRepository;
     private EloquentCustomerRepository $customerRepository;
-    private RabbitMQEventPublisher $eventPublisher;
+    private $eventPublisher;
 
     protected function setUp(): void
     {
@@ -36,11 +37,21 @@ class ConfirmOrderUseCaseTest extends IntegrationTestCase
         
         $this->orderRepository = new EloquentOrderRepository();
         $this->customerRepository = new EloquentCustomerRepository();
-        $this->eventPublisher = new RabbitMQEventPublisher();
+        
+        // Mock RabbitMQEventPublisher to avoid RabbitMQ dependency in tests
+        $this->eventPublisher = Mockery::mock(RabbitMQEventPublisher::class);
+        $this->eventPublisher->shouldReceive('publishAll')->andReturn(true);
+        
         $this->useCase = new ConfirmOrderUseCase(
             $this->orderRepository,
             $this->eventPublisher
         );
+    }
+    
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
     }
 
     /** @test */
@@ -140,8 +151,10 @@ class ConfirmOrderUseCaseTest extends IntegrationTestCase
         $order->addItem($item);
         $this->orderRepository->save($order);
 
-        // Confirm - this should publish events to RabbitMQ
-        // Note: In a real test, you'd mock RabbitMQ or check logs
+        // Expect publishAll to be called once
+        $this->eventPublisher->shouldReceive('publishAll')->once();
+
+        // Confirm - this should publish events (mocked)
         $result = $this->useCase->execute($order->getId()->value());
 
         // Verify order was confirmed

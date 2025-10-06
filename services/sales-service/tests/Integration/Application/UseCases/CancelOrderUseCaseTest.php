@@ -23,13 +23,14 @@ use Src\Domain\ValueObjects\OrderId;
 use Src\Domain\ValueObjects\OrderItemId;
 use Src\Domain\ValueObjects\Quantity;
 use Src\Domain\ValueObjects\Money;
+use Mockery;
 
 class CancelOrderUseCaseTest extends IntegrationTestCase
 {
     private CancelOrderUseCase $useCase;
     private EloquentOrderRepository $orderRepository;
     private EloquentCustomerRepository $customerRepository;
-    private RabbitMQEventPublisher $eventPublisher;
+    private $eventPublisher;
 
     protected function setUp(): void
     {
@@ -37,11 +38,21 @@ class CancelOrderUseCaseTest extends IntegrationTestCase
         
         $this->orderRepository = new EloquentOrderRepository();
         $this->customerRepository = new EloquentCustomerRepository();
-        $this->eventPublisher = new RabbitMQEventPublisher();
+        
+        // Mock RabbitMQEventPublisher to avoid RabbitMQ dependency in tests
+        $this->eventPublisher = Mockery::mock(RabbitMQEventPublisher::class);
+        $this->eventPublisher->shouldReceive('publishAll')->andReturn(true);
+        
         $this->useCase = new CancelOrderUseCase(
             $this->orderRepository,
             $this->eventPublisher
         );
+    }
+    
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
     }
 
     /** @test */
@@ -174,7 +185,10 @@ class CancelOrderUseCaseTest extends IntegrationTestCase
             reason: 'Stock issue'
         );
 
-        // Cancel - this should publish events to RabbitMQ
+        // Expect publishAll to be called once
+        $this->eventPublisher->shouldReceive('publishAll')->once();
+
+        // Cancel - this should publish events (mocked)
         $result = $this->useCase->execute($dto);
 
         // Verify order was cancelled
