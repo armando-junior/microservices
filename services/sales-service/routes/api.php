@@ -2,14 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\StockController;
+use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\OrderController;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes - Inventory Service
+| API Routes - Sales Service
 |--------------------------------------------------------------------------
 */
 
@@ -17,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/health', function () {
     return response()->json([
         'status' => 'ok',
-        'service' => 'inventory-service',
+        'service' => 'sales-service',
         'timestamp' => now()->toIso8601String(),
     ]);
 });
@@ -25,46 +24,17 @@ Route::get('/health', function () {
 // API v1 routes
 Route::prefix('v1')->group(function () {
     
-    // Public routes (read-only, no authentication required)
-    Route::prefix('products')->group(function () {
-        Route::get('/', [ProductController::class, 'index']);
-        Route::get('/{id}', [ProductController::class, 'show']);
-    });
-
-    Route::prefix('categories')->group(function () {
-        Route::get('/', [CategoryController::class, 'index']);
-        Route::get('/{id}', [CategoryController::class, 'show']);
-    });
-
-    Route::prefix('stock')->group(function () {
-        Route::get('/product/{productId}', [StockController::class, 'show']);
-        Route::get('/low-stock', [StockController::class, 'lowStock']);
-        Route::get('/depleted', [StockController::class, 'depleted']);
-    });
-
-    // Protected routes (require JWT authentication)
+    // Customer management (protected - JWT required)
     Route::middleware('jwt.auth')->group(function () {
-        
-        // Product management (write operations)
-        Route::prefix('products')->group(function () {
-            Route::post('/', [ProductController::class, 'store']);
-            Route::put('/{id}', [ProductController::class, 'update']);
-            Route::patch('/{id}', [ProductController::class, 'update']);
-            Route::delete('/{id}', [ProductController::class, 'destroy']);
+        Route::prefix('customers')->group(function () {
+            Route::post('/', [CustomerController::class, 'store']);
+            Route::get('/{id}', [CustomerController::class, 'show']);
         });
 
-        // Category management (write operations)
-        Route::prefix('categories')->group(function () {
-            Route::post('/', [CategoryController::class, 'store']);
-            Route::put('/{id}', [CategoryController::class, 'update']);
-            Route::patch('/{id}', [CategoryController::class, 'update']);
-            Route::delete('/{id}', [CategoryController::class, 'destroy']);
-        });
-
-        // Stock management (write operations)
-        Route::prefix('stock')->group(function () {
-            Route::post('/product/{productId}/increase', [StockController::class, 'increase']);
-            Route::post('/product/{productId}/decrease', [StockController::class, 'decrease']);
+        // Order management (protected - JWT required)
+        Route::prefix('orders')->group(function () {
+            Route::post('/', [OrderController::class, 'store']);
+            Route::get('/{id}', [OrderController::class, 'show']);
         });
     });
 });
