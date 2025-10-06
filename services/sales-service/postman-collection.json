@@ -1,794 +1,580 @@
 {
-  "info": {
-    "name": "Inventory Service API - Complete",
-    "description": "Complete API collection for Inventory Service\n\n**Base URL:** http://localhost:9002/api\n**Documentation:** See API-DOCS.md\n**Version:** 1.0.0\n\n### Sprint 3-4 - 100% Complete ✅\n\n**15 Endpoints Total:**\n- ✅ Category management (5 endpoints): Create, Get, List, Update, Delete\n- ✅ Product catalog with SKU validation (5 endpoints): Create, Get, List, Update, Delete\n- ✅ Stock control with movement tracking (5 endpoints): Get, Increase, Decrease, Low Stock, Depleted\n\n**Features:**\n- ✅ Complete CRUD operations\n- ✅ Partial updates supported\n- ✅ Business rules enforcement (cannot delete categories with products, products with stock)\n- ✅ Low stock and depletion monitoring\n- ✅ Automated tests included\n- ✅ 63+ tests passing\n\n**How to Use:**\n1. Run the \"Create Category\" request first\n2. The category_id will be automatically saved\n3. Run \"Create Product\" with the category_id\n4. Test stock operations, updates, and deletions\n5. All requests include automated tests",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "version": "1.0.0"
-  },
-  "variable": [
-    {
-      "key": "base_url",
-      "value": "http://localhost:9002/api",
-      "type": "string"
-    },
-    {
-      "key": "category_id",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "product_id",
-      "value": "",
-      "type": "string"
-    }
-  ],
-  "item": [
-    {
-      "name": "⚡ Health Check",
-      "description": "System health and availability check",
-      "item": [
-        {
-          "name": "Health Check",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"Service is OK\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.status).to.eql(\"ok\");",
-                  "    pm.expect(jsonData.service).to.eql(\"inventory-service\");",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/health",
-              "host": ["{{base_url}}"],
-              "path": ["health"]
-            },
-            "description": "Health check endpoint to verify service availability"
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "📂 Categories",
-      "description": "Category management endpoints",
-      "item": [
-        {
-          "name": "Create Category",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 201) {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.collectionVariables.set('category_id', jsonData.data.id);",
-                  "    pm.test('Status code is 201', function () {",
-                  "        pm.response.to.have.status(201);",
-                  "    });",
-                  "    pm.test('Category created successfully', function () {",
-                  "        pm.expect(jsonData.message).to.eql('Category created successfully');",
-                  "        pm.expect(jsonData.data).to.have.property('id');",
-                  "        pm.expect(jsonData.data).to.have.property('slug');",
-                  "        pm.expect(jsonData.data.status).to.eql('active');",
-                  "    });",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Electronics\",\n  \"description\": \"Electronic products and accessories\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/v1/categories",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "categories"]
-            },
-            "description": "Create a new product category"
-          },
-          "response": []
-        },
-        {
-          "name": "Get Category",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"Category retrieved successfully\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.data).to.have.property('id');",
-                  "    pm.expect(jsonData.data).to.have.property('name');",
-                  "    pm.expect(jsonData.data).to.have.property('slug');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/v1/categories/{{category_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "categories", "{{category_id}}"]
-            },
-            "description": "Retrieve a category by ID"
-          },
-          "response": []
-        },
-        {
-          "name": "List Categories",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"Categories list returned\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.data).to.be.an('array');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/v1/categories?status=active",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "categories"],
-              "query": [
-                {
-                  "key": "status",
-                  "value": "active"
-                }
-              ]
-            },
-            "description": "List all categories with optional status filter"
-          },
-          "response": []
-        },
-        {
-          "name": "Update Category",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"Category updated successfully\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.message).to.eql('Category updated successfully');",
-                  "    pm.expect(jsonData.data).to.have.property('updated_at');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Electronics and Computers\",\n  \"description\": \"Electronic products and computer equipment\",\n  \"status\": \"active\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/v1/categories/{{category_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "categories", "{{category_id}}"]
-            },
-            "description": "Update an existing category (partial updates supported)"
-          },
-          "response": []
-        },
-        {
-          "name": "Delete Category",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 200) {",
-                  "    pm.test(\"Status code is 200\", function () {",
-                  "        pm.response.to.have.status(200);",
-                  "    });",
-                  "    pm.test(\"Category deleted successfully\", function () {",
-                  "        var jsonData = pm.response.json();",
-                  "        pm.expect(jsonData.message).to.eql('Category deleted successfully');",
-                  "    });",
-                  "}",
-                  "",
-                  "if (pm.response.code === 409) {",
-                  "    pm.test(\"Cannot delete category with products\", function () {",
-                  "        var jsonData = pm.response.json();",
-                  "        pm.expect(jsonData.error).to.eql('CategoryHasProducts');",
-                  "    });",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/v1/categories/{{category_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "categories", "{{category_id}}"]
-            },
-            "description": "Delete a category (fails if it has products)"
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "📦 Products",
-      "description": "Product catalog management endpoints",
-      "item": [
-        {
-          "name": "Create Product",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 201) {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.collectionVariables.set('product_id', jsonData.data.id);",
-                  "    pm.test('Status code is 201', function () {",
-                  "        pm.response.to.have.status(201);",
-                  "    });",
-                  "    pm.test('Product created successfully', function () {",
-                  "        pm.expect(jsonData.message).to.eql('Product created successfully');",
-                  "        pm.expect(jsonData.data).to.have.property('id');",
-                  "        pm.expect(jsonData.data).to.have.property('sku');",
-                  "        pm.expect(jsonData.data.status).to.eql('active');",
-                  "    });",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Laptop Dell Inspiron 15\",\n  \"sku\": \"LAPTOP-DELL-INSP15-001\",\n  \"price\": 3499.99,\n  \"category_id\": \"{{category_id}}\",\n  \"barcode\": \"7891234567890\",\n  \"description\": \"15.6 inch Full HD, Intel Core i5, 8GB RAM, 256GB SSD\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/v1/products",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "products"]
-            },
-            "description": "Create a new product"
-          },
-          "response": []
-        },
-        {
-          "name": "Get Product",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"Product retrieved successfully\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.data).to.have.property('id');",
-                  "    pm.expect(jsonData.data).to.have.property('name');",
-                  "    pm.expect(jsonData.data).to.have.property('sku');",
-                  "    pm.expect(jsonData.data).to.have.property('price');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/v1/products/{{product_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "products", "{{product_id}}"]
-            },
-            "description": "Retrieve a product by ID"
-          },
-          "response": []
-        },
-        {
-          "name": "List Products",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"Products list returned\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.data).to.be.an('array');",
-                  "    pm.expect(jsonData.meta).to.have.property('page');",
-                  "    pm.expect(jsonData.meta).to.have.property('per_page');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/v1/products?page=1&per_page=15&status=active",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "products"],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "per_page",
-                  "value": "15"
-                },
-                {
-                  "key": "status",
-                  "value": "active"
-                },
-                {
-                  "key": "category_id",
-                  "value": "{{category_id}}",
-                  "disabled": true
-                }
-              ]
-            },
-            "description": "List products with pagination and filters"
-          },
-          "response": []
-        },
-        {
-          "name": "Update Product",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"Product updated successfully\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.message).to.eql('Product updated successfully');",
-                  "    pm.expect(jsonData.data).to.have.property('updated_at');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Laptop Dell Inspiron 15 (Updated)\",\n  \"price\": 3299.99,\n  \"description\": \"15.6 inch Full HD, Intel Core i7, 16GB RAM, 512GB SSD\",\n  \"status\": \"active\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/v1/products/{{product_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "products", "{{product_id}}"]
-            },
-            "description": "Update an existing product (partial updates supported, SKU cannot be changed)"
-          },
-          "response": []
-        },
-        {
-          "name": "Delete Product",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 200) {",
-                  "    pm.test(\"Status code is 200\", function () {",
-                  "        pm.response.to.have.status(200);",
-                  "    });",
-                  "    pm.test(\"Product deleted successfully\", function () {",
-                  "        var jsonData = pm.response.json();",
-                  "        pm.expect(jsonData.message).to.eql('Product deleted successfully');",
-                  "    });",
-                  "}",
-                  "",
-                  "if (pm.response.code === 409) {",
-                  "    pm.test(\"Cannot delete product with stock\", function () {",
-                  "        var jsonData = pm.response.json();",
-                  "        pm.expect(jsonData.error).to.eql('ProductHasStock');",
-                  "    });",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/v1/products/{{product_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "products", "{{product_id}}"]
-            },
-            "description": "Delete a product (fails if it has stock)"
-          },
-          "response": []
-        },
-        {
-          "name": "Validation Error - Missing Fields",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 422\", function () {",
-                  "    pm.response.to.have.status(422);",
-                  "});",
-                  "",
-                  "pm.test(\"Validation errors returned\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData).to.have.property('errors');",
-                  "    pm.expect(jsonData.errors).to.have.property('name');",
-                  "    pm.expect(jsonData.errors).to.have.property('sku');",
-                  "    pm.expect(jsonData.errors).to.have.property('price');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"description\": \"This should fail validation\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/v1/products",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "products"]
-            },
-            "description": "Test validation errors for missing required fields"
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "📊 Stock",
-      "description": "Stock management and movement tracking endpoints",
-      "item": [
-        {
-          "name": "Get Stock",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200 or 404\", function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
-                  "});",
-                  "",
-                  "if (pm.response.code === 200) {",
-                  "    pm.test(\"Stock retrieved successfully\", function () {",
-                  "        var jsonData = pm.response.json();",
-                  "        pm.expect(jsonData.data).to.have.property('product_id');",
-                  "        pm.expect(jsonData.data).to.have.property('quantity');",
-                  "        pm.expect(jsonData.data).to.have.property('minimum_quantity');",
-                  "        pm.expect(jsonData.data).to.have.property('is_low_stock');",
-                  "        pm.expect(jsonData.data).to.have.property('is_depleted');",
-                  "    });",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/v1/stock/product/{{product_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "stock", "product", "{{product_id}}"]
-            },
-            "description": "Get stock information for a product"
-          },
-          "response": []
-        },
-        {
-          "name": "Increase Stock",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"Stock increased successfully\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.message).to.eql('Stock increased successfully');",
-                  "    pm.expect(jsonData.data).to.have.property('quantity');",
-                  "    pm.expect(jsonData.data.last_movement_at).to.not.be.null;",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"quantity\": 50,\n  \"reason\": \"Purchase order received\",\n  \"reference_id\": \"PO-2024-001\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/v1/stock/product/{{product_id}}/increase",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "stock", "product", "{{product_id}}", "increase"]
-            },
-            "description": "Increase stock quantity (purchase, return, etc.)"
-          },
-          "response": []
-        },
-        {
-          "name": "Decrease Stock",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200 or 400\", function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
-                  "});",
-                  "",
-                  "if (pm.response.code === 200) {",
-                  "    pm.test(\"Stock decreased successfully\", function () {",
-                  "        var jsonData = pm.response.json();",
-                  "        pm.expect(jsonData.message).to.eql('Stock decreased successfully');",
-                  "        pm.expect(jsonData.data).to.have.property('quantity');",
-                  "    });",
-                  "} else {",
-                  "    pm.test(\"Insufficient stock error\", function () {",
-                  "        var jsonData = pm.response.json();",
-                  "        pm.expect(jsonData.error).to.eql('InsufficientStock');",
-                  "    });",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"quantity\": 10,\n  \"reason\": \"Sale completed\",\n  \"reference_id\": \"SALE-2024-042\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/v1/stock/product/{{product_id}}/decrease",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "stock", "product", "{{product_id}}", "decrease"]
-            },
-            "description": "Decrease stock quantity (sale, damage, etc.)"
-          },
-          "response": []
-        },
-        {
-          "name": "Get Low Stock Products",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"Low stock list returned\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.data).to.be.an('array');",
-                  "    pm.expect(jsonData.meta).to.have.property('total');",
-                  "    ",
-                  "    if (jsonData.data.length > 0) {",
-                  "        pm.expect(jsonData.data[0]).to.have.property('is_low_stock');",
-                  "        pm.expect(jsonData.data[0].is_low_stock).to.be.true;",
-                  "    }",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/v1/stock/low-stock",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "stock", "low-stock"]
-            },
-            "description": "Get all products with stock below minimum threshold"
-          },
-          "response": []
-        },
-        {
-          "name": "Get Depleted Stock Products",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"Depleted stock list returned\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.data).to.be.an('array');",
-                  "    pm.expect(jsonData.meta).to.have.property('total');",
-                  "    ",
-                  "    if (jsonData.data.length > 0) {",
-                  "        pm.expect(jsonData.data[0]).to.have.property('is_depleted');",
-                  "        pm.expect(jsonData.data[0].is_depleted).to.be.true;",
-                  "        pm.expect(jsonData.data[0].quantity).to.eql(0);",
-                  "    }",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/v1/stock/depleted",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "stock", "depleted"]
-            },
-            "description": "Get all products with zero stock"
-          },
-          "response": []
-        },
-        {
-          "name": "Validation Error - Missing Fields",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 422\", function () {",
-                  "    pm.response.to.have.status(422);",
-                  "});",
-                  "",
-                  "pm.test(\"Validation errors returned\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData).to.have.property('errors');",
-                  "    pm.expect(jsonData.errors).to.have.property('quantity');",
-                  "    pm.expect(jsonData.errors).to.have.property('reason');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{}"
-            },
-            "url": {
-              "raw": "{{base_url}}/v1/stock/product/{{product_id}}/increase",
-              "host": ["{{base_url}}"],
-              "path": ["v1", "stock", "product", "{{product_id}}", "increase"]
-            },
-            "description": "Test validation errors for missing required fields"
-          },
-          "response": []
-        }
-      ]
-    }
-  ]
+	"info": {
+		"_postman_id": "sales-service-collection",
+		"name": "Sales Service API",
+		"description": "Microserviço de Vendas - Gerenciamento de clientes e pedidos de venda",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{jwt_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:9003/api",
+			"type": "string"
+		},
+		{
+			"key": "auth_url",
+			"value": "http://localhost:9001/api",
+			"type": "string"
+		},
+		{
+			"key": "inventory_url",
+			"value": "http://localhost:9002/api",
+			"type": "string"
+		},
+		{
+			"key": "jwt_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "customer_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "order_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "product_id",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/health",
+					"host": ["{{base_url}}"],
+					"path": ["health"]
+				},
+				"description": "Verifica o status do Sales Service"
+			},
+			"response": [],
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Service is ok\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.status).to.eql('ok');",
+							"    pm.expect(jsonData.service).to.eql('sales-service');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			]
+		},
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Login (Get Token)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"testauth@example.com\",\n    \"password\": \"Test@123\"\n}"
+						},
+						"url": {
+							"raw": "{{auth_url}}/auth/login",
+							"host": ["{{auth_url}}"],
+							"path": ["auth", "login"]
+						},
+						"description": "Faz login no Auth Service e obtém o JWT token"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"jwt_token\", jsonData.data.access_token);",
+									"    pm.test(\"Token obtained\", function () {",
+									"        pm.expect(jsonData.data.access_token).to.be.a('string');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Customers",
+			"item": [
+				{
+					"name": "List Customers",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/v1/customers?page=1&per_page=15",
+							"host": ["{{base_url}}"],
+							"path": ["v1", "customers"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "15"
+								},
+								{
+									"key": "status",
+									"value": "active",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "silva",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista todos os clientes com paginação"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has data and meta\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('data');",
+									"    pm.expect(jsonData).to.have.property('meta');",
+									"    pm.expect(jsonData.meta).to.have.property('total');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Customer",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"João Silva\",\n    \"email\": \"joao.silva@example.com\",\n    \"phone\": \"11987654321\",\n    \"document\": \"11144477735\",\n    \"address_street\": \"Rua das Flores\",\n    \"address_number\": \"123\",\n    \"address_complement\": \"Apto 45\",\n    \"address_city\": \"São Paulo\",\n    \"address_state\": \"SP\",\n    \"address_zip_code\": \"01234567\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/v1/customers",
+							"host": ["{{base_url}}"],
+							"path": ["v1", "customers"]
+						},
+						"description": "Cria um novo cliente"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"customer_id\", jsonData.data.id);",
+									"    pm.test(\"Customer created\", function () {",
+									"        pm.expect(jsonData.message).to.include('successfully');",
+									"        pm.expect(jsonData.data.id).to.be.a('string');",
+									"        pm.expect(jsonData.data.status).to.eql('active');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Customer",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/v1/customers/{{customer_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["v1", "customers", "{{customer_id}}"]
+						},
+						"description": "Busca um cliente por ID"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Customer data is complete\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('id');",
+									"    pm.expect(jsonData.data).to.have.property('name');",
+									"    pm.expect(jsonData.data).to.have.property('email');",
+									"    pm.expect(jsonData.data).to.have.property('document_formatted');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Orders",
+			"item": [
+				{
+					"name": "List Orders",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/v1/orders?page=1&per_page=15",
+							"host": ["{{base_url}}"],
+							"path": ["v1", "orders"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "15"
+								},
+								{
+									"key": "status",
+									"value": "confirmed",
+									"disabled": true
+								},
+								{
+									"key": "payment_status",
+									"value": "pending",
+									"disabled": true
+								},
+								{
+									"key": "customer_id",
+									"value": "{{customer_id}}",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista todos os pedidos com filtros"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has data and meta\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('data');",
+									"    pm.expect(jsonData).to.have.property('meta');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Create Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"customer_id\": \"{{customer_id}}\",\n    \"notes\": \"Pedido de teste via Postman\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/v1/orders",
+							"host": ["{{base_url}}"],
+							"path": ["v1", "orders"]
+						},
+						"description": "Cria um novo pedido em status draft"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"order_id\", jsonData.data.id);",
+									"    pm.test(\"Order created\", function () {",
+									"        pm.expect(jsonData.message).to.include('successfully');",
+									"        pm.expect(jsonData.data.id).to.be.a('string');",
+									"        pm.expect(jsonData.data.status).to.eql('draft');",
+									"        pm.expect(jsonData.data.order_number).to.match(/ORD-\\d{4}-\\d{4}/);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Order",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/v1/orders/{{order_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["v1", "orders", "{{order_id}}"]
+						},
+						"description": "Busca um pedido por ID, incluindo todos os itens"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Order data is complete\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('id');",
+									"    pm.expect(jsonData.data).to.have.property('order_number');",
+									"    pm.expect(jsonData.data).to.have.property('status');",
+									"    pm.expect(jsonData.data).to.have.property('items');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Product from Inventory (Helper)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{inventory_url}}/v1/products",
+							"host": ["{{inventory_url}}"],
+							"path": ["v1", "products"]
+						},
+						"description": "Busca produtos do Inventory Service (necessário para adicionar item ao pedido)"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.length > 0) {",
+									"        pm.environment.set(\"product_id\", jsonData.data[0].id);",
+									"        pm.test(\"Product ID saved\", function () {",
+									"            pm.expect(jsonData.data[0].id).to.be.a('string');",
+									"        });",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Add Order Item",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"product_id\": \"{{product_id}}\",\n    \"quantity\": 2,\n    \"discount\": 10.00\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/v1/orders/{{order_id}}/items",
+							"host": ["{{base_url}}"],
+							"path": ["v1", "orders", "{{order_id}}", "items"]
+						},
+						"description": "Adiciona um item ao pedido (busca produto do Inventory Service)"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.test(\"Item added successfully\", function () {",
+									"        pm.expect(jsonData.message).to.include('successfully');",
+									"        pm.expect(jsonData.data.items_count).to.be.above(0);",
+									"        pm.expect(jsonData.data.total).to.be.above(0);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Confirm Order",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/v1/orders/{{order_id}}/confirm",
+							"host": ["{{base_url}}"],
+							"path": ["v1", "orders", "{{order_id}}", "confirm"]
+						},
+						"description": "Confirma o pedido, mudando status de draft para confirmed"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.test(\"Order confirmed\", function () {",
+									"        pm.expect(jsonData.message).to.include('successfully');",
+									"        pm.expect(jsonData.data.status).to.eql('confirmed');",
+									"        pm.expect(jsonData.data.confirmed_at).to.not.be.null;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Cancel Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reason\": \"Cliente desistiu da compra\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/v1/orders/{{order_id}}/cancel",
+							"host": ["{{base_url}}"],
+							"path": ["v1", "orders", "{{order_id}}", "cancel"]
+						},
+						"description": "Cancela um pedido"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.test(\"Order cancelled\", function () {",
+									"        pm.expect(jsonData.message).to.include('successfully');",
+									"        pm.expect(jsonData.data.status).to.eql('cancelled');",
+									"        pm.expect(jsonData.data.cancelled_at).to.not.be.null;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		}
+	]
 }

@@ -1,1118 +1,901 @@
-# 📦 Inventory Service - API Documentation
+# Sales Service - API Documentation
 
-**Version:** 1.0.0 (Sprint 3-4 Complete + JWT Integration)  
-**Base URL:** `http://localhost:9002/api`  
-**Authentication:** ✅ JWT Bearer Token (Required for write operations)  
-**Status:** ✅ Production Ready
+## Visão Geral
 
----
-
-## 📋 Table of Contents
-
-1. [Overview](#overview)
-2. [Authentication](#authentication) ⭐ NEW
-3. [Category Endpoints](#category-endpoints) (5 endpoints)
-4. [Product Endpoints](#product-endpoints) (5 endpoints)
-5. [Stock Endpoints](#stock-endpoints) (5 endpoints)
-6. [Error Responses](#error-responses)
-7. [Business Rules](#business-rules)
-8. [Request Examples](#request-examples)
+O **Sales Service** é responsável pela gestão de vendas no sistema ERP, incluindo:
+- Gerenciamento de clientes (cadastro, consulta, listagem)
+- Gerenciamento de pedidos de venda
+- Adição de itens aos pedidos (integração com Inventory Service)
+- Controle de status de pedidos e pagamentos
+- Validação de documentos brasileiros (CPF/CNPJ)
 
 ---
 
-## 🎯 Overview
+## Informações Técnicas
 
-The Inventory Service manages products, categories, and stock control for the ERP system. It provides comprehensive inventory management with real-time stock tracking, movement history, low-stock alerts, and complete CRUD operations.
-
-### Features
-- ✅ **Complete Category Management** (Create, Read, Update, Delete, List)
-- ✅ **Full Product Catalog** with SKU validation (Create, Read, Update, Delete, List)
-- ✅ **Stock Control** with movement tracking (Increase, Decrease, Get)
-- ✅ **Inventory Alerts** (Low stock and depletion monitoring)
-- ✅ **Business Rules** (Prevent deletion of categories with products, products with stock)
-- ✅ **Partial Updates** (Send only the fields you want to change)
-- ✅ **Input Validation** with detailed error messages
-- ✅ **Clean Architecture** implementation
-- ✅ **Domain-Driven Design** patterns
-
-### API Endpoints Summary
-- **15 endpoints** total (100% functional)
-- **5 Category endpoints**: Create, Get, List, Update, Delete
-- **5 Product endpoints**: Create, Get, List, Update, Delete
-- **5 Stock endpoints**: Get, Increase, Decrease, Low Stock, Depleted
-
-### Testing
-- **63+ tests passing** (100% success rate)
-- Unit Tests: 50+ tests (Value Objects, Entities, Use Cases)
-- Feature Tests: 13+ tests (API endpoints)
-- All new endpoints manually tested and validated
-
-### Database Schema
-- **4 tables**: categories, products, stocks, stock_movements
-- **PostgreSQL** with full referential integrity
-- **UUID** primary keys for distributed systems
+- **Base URL**: `http://localhost:9003/api`
+- **Porta**: `9003`
+- **Autenticação**: JWT Bearer Token (obtido no Auth Service)
+- **Formato**: JSON
+- **Versão da API**: `v1`
 
 ---
 
-## 🔐 Authentication
+## Autenticação
 
-The Inventory Service uses **JWT (JSON Web Token)** for authentication, integrated with the Auth Service.
+Todos os endpoints da API (exceto health check) requerem autenticação JWT.
 
-### Authentication Rules
+### Como obter o token
 
-- **Public Endpoints** (No authentication required):
-  - `GET` operations: List categories, products, view stock
-  - Health check endpoint
-  
-- **Protected Endpoints** (JWT required):
-  - `POST`, `PUT`, `PATCH`, `DELETE` operations
-  - Creating, updating, deleting categories/products
-  - Stock increase/decrease operations
-
-### How to Authenticate
-
-#### Step 1: Get a JWT Token from Auth Service
+1. Faça login no **Auth Service** (porta 9001):
 
 ```bash
-# Register a new user (if needed)
-curl -X POST http://localhost:9001/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"name":"John Doe","email":"john@example.com","password":"SecurePass@123"}'
-
-# Login to get token
 curl -X POST http://localhost:9001/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"john@example.com","password":"SecurePass@123"}'
-
-# Response:
-{
-  "data": {
-    "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-    "token_type": "bearer",
-    "expires_in": 3600
-  }
-}
+  -d '{
+    "email": "seu@email.com",
+    "password": "sua_senha"
+  }'
 ```
 
-#### Step 2: Use Token in Inventory Service Requests
-
-Include the JWT token in the `Authorization` header with the `Bearer` prefix:
+2. Use o token retornado no header `Authorization`:
 
 ```bash
-curl -X POST http://localhost:9002/api/v1/products \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..." \
-  -d '{"name":"Laptop","sku":"LAPTOP-001","price":999.99}'
+Authorization: Bearer {seu_token_jwt}
 ```
 
-### Authentication Error Responses
+### Códigos de Erro de Autenticação
 
-**401 Unauthorized** - Token not provided
-```json
-{
-  "error": "Unauthorized",
-  "message": "Token not provided"
-}
-```
-
-**401 Unauthorized** - Token expired
-```json
-{
-  "error": "TokenExpired",
-  "message": "Token has expired"
-}
-```
-
-**401 Unauthorized** - Invalid token
-```json
-{
-  "error": "InvalidToken",
-  "message": "Token signature is invalid"
-}
-```
-
-### Token Validation
-
-- The Inventory Service validates tokens using the **same secret** as Auth Service
-- Tokens are validated on every protected endpoint request
-- Expired or invalid tokens are rejected with 401 status
-- No need for database lookup - validation is stateless
+| Código | Mensagem | Descrição |
+|--------|----------|-----------|
+| `401` | `Unauthorized` | Token ausente ou inválido |
+| `401` | `TokenExpired` | Token expirado |
+| `401` | `InvalidToken` | Assinatura do token inválida |
 
 ---
 
-## 📂 Category Endpoints
+## Endpoints
 
-### 1. Create Category
+### Health Check
 
-Create a new product category.
+#### `GET /health`
 
-**Endpoint:** `POST /api/v1/categories`  
-**Authentication:** ✅ **Required** (JWT Bearer Token)
+Verifica o status do serviço.
 
-#### Request Body
+**Autenticação**: Não requerida
 
+**Resposta de Sucesso (200)**:
 ```json
 {
-  "name": "Electronics",
-  "description": "Electronic products and accessories"
-}
-```
-
-#### Validation Rules
-
-| Field | Rules |
-|-------|-------|
-| `name` | Required, string, 2-100 characters |
-| `description` | Optional, string, max 1000 characters |
-
-#### Success Response (201 Created)
-
-```json
-{
-  "message": "Category created successfully",
-  "data": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "name": "Electronics",
-    "slug": "electronics",
-    "description": "Electronic products and accessories",
-    "status": "active",
-    "created_at": "2025-10-06 12:00:00",
-    "updated_at": null
-  }
-}
-```
-
-#### Error Responses
-
-**422 Unprocessable Entity** - Validation failed
-
-```json
-{
-  "message": "Category name is required",
-  "errors": {
-    "name": ["Category name is required"]
-  }
+  "status": "ok",
+  "service": "sales-service",
+  "timestamp": "2025-10-06T02:00:00+00:00"
 }
 ```
 
 ---
 
-### 2. Get Category
+## Customers (Clientes)
 
-Retrieve a category by ID.
+### 1. Listar Clientes
 
-**Endpoint:** `GET /api/v1/categories/{id}`  
-**Authentication:** Not required (Public endpoint)
+#### `GET /v1/customers`
 
-#### Success Response (200 OK)
+Lista todos os clientes com paginação e filtros.
 
-```json
-{
-  "data": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "name": "Electronics",
-    "slug": "electronics",
-    "description": "Electronic products and accessories",
-    "status": "active",
-    "created_at": "2025-10-06 12:00:00",
-    "updated_at": null
-  }
-}
+**Autenticação**: Requerida (JWT)
+
+**Query Parameters**:
+| Parâmetro | Tipo | Obrigatório | Descrição |
+|-----------|------|-------------|-----------|
+| `page` | integer | Não | Número da página (padrão: 1) |
+| `per_page` | integer | Não | Itens por página (padrão: 15) |
+| `status` | string | Não | Filtrar por status: `active`, `inactive` |
+| `search` | string | Não | Buscar por nome, email ou documento |
+
+**Exemplo de Requisição**:
+```bash
+curl -X GET "http://localhost:9003/api/v1/customers?page=1&per_page=15&status=active" \
+  -H "Authorization: Bearer {token}"
 ```
 
-#### Error Responses
-
-**404 Not Found**
-
-```json
-{
-  "error": "CategoryNotFound",
-  "message": "Category not found with ID: {id}"
-}
-```
-
----
-
-### 3. List Categories
-
-Retrieve all categories.
-
-**Endpoint:** `GET /api/v1/categories`  
-**Authentication:** Not required (Public endpoint)
-
-#### Query Parameters
-
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `status` | string | Filter by status (active, inactive) | all |
-
-#### Success Response (200 OK)
-
+**Resposta de Sucesso (200)**:
 ```json
 {
   "data": [
     {
-      "id": "550e8400-e29b-41d4-a716-446655440000",
-      "name": "Electronics",
-      "slug": "electronics",
-      "description": "Electronic products",
+      "id": "3a25ea9d-3d54-4635-a65f-588ba03bca28",
+      "name": "João Silva",
+      "email": "joao.silva@example.com",
+      "phone": "11987654321",
+      "phone_formatted": "(11) 98765-4321",
+      "document": "11144477735",
+      "document_formatted": "111.444.777-35",
+      "document_type": "CPF",
+      "address": {
+        "street": "Rua das Flores",
+        "number": "123",
+        "complement": null,
+        "city": "São Paulo",
+        "state": "SP",
+        "zip_code": "01234567"
+      },
       "status": "active",
-      "created_at": "2025-10-06 12:00:00",
-      "updated_at": null
-    }
-  ]
-}
-```
-
----
-
-### 4. Update Category
-
-Update an existing category.
-
-**Endpoint:** `PUT /api/v1/categories/{id}` or `PATCH /api/v1/categories/{id}`  
-**Authentication:** ✅ **Required** (JWT Bearer Token)
-
-#### Request Body
-
-All fields are optional. Only send the fields you want to update.
-
-```json
-{
-  "name": "Electronics and Computers",
-  "description": "Electronic products and computer equipment",
-  "status": "active"
-}
-```
-
-#### Validation Rules
-
-| Field | Rules |
-|-------|-------|
-| `name` | Optional, string, 2-100 characters |
-| `description` | Optional, string, max 1000 characters |
-| `status` | Optional, string, must be "active" or "inactive" |
-
-#### Success Response (200 OK)
-
-```json
-{
-  "message": "Category updated successfully",
-  "data": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "name": "Electronics and Computers",
-    "slug": "electronics-and-computers",
-    "description": "Electronic products and computer equipment",
-    "status": "active",
-    "created_at": "2025-10-06 12:00:00",
-    "updated_at": "2025-10-06 13:30:00"
-  }
-}
-```
-
-#### Error Responses
-
-**404 Not Found**
-
-```json
-{
-  "error": "CategoryNotFound",
-  "message": "Category with ID {id} not found."
-}
-```
-
-**422 Unprocessable Entity** - Validation failed
-
-```json
-{
-  "message": "Category name must be at least 2 characters long",
-  "errors": {
-    "name": ["Category name must be at least 2 characters long"]
-  }
-}
-```
-
----
-
-### 5. Delete Category
-
-Delete a category. Cannot delete if there are products associated with it.
-
-**Endpoint:** `DELETE /api/v1/categories/{id}`  
-**Authentication:** ✅ **Required** (JWT Bearer Token)
-
-#### Success Response (200 OK)
-
-```json
-{
-  "message": "Category deleted successfully"
-}
-```
-
-#### Error Responses
-
-**404 Not Found**
-
-```json
-{
-  "error": "CategoryNotFound",
-  "message": "Category with ID {id} not found."
-}
-```
-
-**409 Conflict** - Category has associated products
-
-```json
-{
-  "error": "CategoryHasProducts",
-  "message": "Cannot delete category with 5 associated products."
-}
-```
-
----
-
-## 📦 Product Endpoints
-
-### 1. Create Product
-
-Create a new product in the catalog.
-
-**Endpoint:** `POST /api/v1/products`  
-**Authentication:** ✅ **Required** (JWT Bearer Token)
-
-#### Request Body
-
-```json
-{
-  "name": "Laptop Dell Inspiron 15",
-  "sku": "LAPTOP-DELL-INSP15-001",
-  "price": 3499.99,
-  "category_id": "550e8400-e29b-41d4-a716-446655440000",
-  "barcode": "7891234567890",
-  "description": "15.6\" Full HD, Intel Core i5, 8GB RAM, 256GB SSD"
-}
-```
-
-#### Validation Rules
-
-| Field | Rules |
-|-------|-------|
-| `name` | Required, string, 2-200 characters |
-| `sku` | Required, string, 3-100 characters, uppercase letters/numbers/hyphens only, unique |
-| `price` | Required, numeric, min 0.01, max 9,999,999.99 |
-| `category_id` | Optional, valid UUID, must exist in categories table |
-| `barcode` | Optional, string, max 100 characters |
-| `description` | Optional, string, max 2000 characters |
-
-#### Success Response (201 Created)
-
-```json
-{
-  "message": "Product created successfully",
-  "data": {
-    "id": "d91a1457-1b39-4edf-a8eb-2320f1aba8e5",
-    "name": "Laptop Dell Inspiron 15",
-    "sku": "LAPTOP-DELL-INSP15-001",
-    "price": 3499.99,
-    "category_id": "550e8400-e29b-41d4-a716-446655440000",
-    "barcode": "7891234567890",
-    "description": "15.6\" Full HD, Intel Core i5, 8GB RAM, 256GB SSD",
-    "status": "active",
-    "created_at": "2025-10-06 12:00:00",
-    "updated_at": null
-  }
-}
-```
-
-#### Error Responses
-
-**422 Unprocessable Entity** - Validation failed
-
-```json
-{
-  "message": "SKU must contain only uppercase letters, numbers and hyphens",
-  "errors": {
-    "sku": ["SKU must contain only uppercase letters, numbers and hyphens"]
-  }
-}
-```
-
-**409 Conflict** - Duplicate SKU
-
-```json
-{
-  "error": "SKUAlreadyExists",
-  "message": "SKU already exists: LAPTOP-DELL-INSP15-001"
-}
-```
-
----
-
-### 2. Get Product
-
-Retrieve a product by ID.
-
-**Endpoint:** `GET /api/v1/products/{id}`  
-**Authentication:** Not required (Public endpoint)
-
-#### Success Response (200 OK)
-
-```json
-{
-  "data": {
-    "id": "d91a1457-1b39-4edf-a8eb-2320f1aba8e5",
-    "name": "Laptop Dell Inspiron 15",
-    "sku": "LAPTOP-DELL-INSP15-001",
-    "price": 3499.99,
-    "category_id": "550e8400-e29b-41d4-a716-446655440000",
-    "barcode": "7891234567890",
-    "description": "15.6\" Full HD, Intel Core i5, 8GB RAM, 256GB SSD",
-    "status": "active",
-    "created_at": "2025-10-06 12:00:00",
-    "updated_at": null
-  }
-}
-```
-
-#### Error Responses
-
-**404 Not Found**
-
-```json
-{
-  "error": "ProductNotFound",
-  "message": "Product not found with ID: {id}"
-}
-```
-
----
-
-### 3. List Products
-
-Retrieve products with optional filtering and pagination.
-
-**Endpoint:** `GET /api/v1/products`  
-**Authentication:** Not required (Public endpoint)
-
-#### Query Parameters
-
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `status` | string | Filter by status (active, inactive, discontinued) | all |
-| `category_id` | UUID | Filter by category | all |
-| `page` | integer | Page number | 1 |
-| `per_page` | integer | Items per page | 15 |
-
-#### Success Response (200 OK)
-
-```json
-{
-  "data": [
-    {
-      "id": "d91a1457-1b39-4edf-a8eb-2320f1aba8e5",
-      "name": "Laptop Dell Inspiron 15",
-      "sku": "LAPTOP-DELL-INSP15-001",
-      "price": 3499.99,
-      "category_id": "550e8400-e29b-41d4-a716-446655440000",
-      "barcode": "7891234567890",
-      "description": "15.6\" Full HD, Intel Core i5, 8GB RAM, 256GB SSD",
-      "status": "active",
-      "created_at": "2025-10-06 12:00:00",
+      "created_at": "2025-10-06 02:00:00",
       "updated_at": null
     }
   ],
   "meta": {
-    "page": 1,
-    "per_page": 15
+    "current_page": 1,
+    "per_page": 15,
+    "total": 25,
+    "last_page": 2
   }
 }
 ```
 
 ---
 
-### 4. Update Product
+### 2. Criar Cliente
 
-Update an existing product. SKU cannot be changed after creation.
+#### `POST /v1/customers`
 
-**Endpoint:** `PUT /api/v1/products/{id}` or `PATCH /api/v1/products/{id}`  
-**Authentication:** ✅ **Required** (JWT Bearer Token)
+Cria um novo cliente no sistema.
 
-#### Request Body
+**Autenticação**: Requerida (JWT)
 
-All fields are optional. Only send the fields you want to update.
-
+**Body Parameters**:
 ```json
 {
-  "name": "Laptop Dell Inspiron 15 (Updated)",
-  "price": 3299.99,
-  "category_id": "550e8400-e29b-41d4-a716-446655440000",
-  "barcode": "7891234567890",
-  "description": "15.6\" Full HD, Intel Core i7, 16GB RAM, 512GB SSD - Updated specs",
-  "status": "active"
+  "name": "João Silva",
+  "email": "joao.silva@example.com",
+  "phone": "11987654321",
+  "document": "11144477735",
+  "address_street": "Rua das Flores",
+  "address_number": "123",
+  "address_complement": "Apto 45",
+  "address_city": "São Paulo",
+  "address_state": "SP",
+  "address_zip_code": "01234567"
 }
 ```
 
-#### Validation Rules
+**Validações**:
+- `name`: obrigatório, 2-200 caracteres, apenas letras
+- `email`: obrigatório, formato válido, único
+- `phone`: obrigatório, formato numérico
+- `document`: obrigatório, CPF ou CNPJ válido com dígitos verificadores
+- `address_state`: opcional, 2 caracteres maiúsculos (sigla do estado)
 
-| Field | Rules |
-|-------|-------|
-| `name` | Optional, string, 2-200 characters |
-| `price` | Optional, numeric, min 0.01, max 9,999,999.99 |
-| `category_id` | Optional, valid UUID, must exist in categories table |
-| `barcode` | Optional, string, max 100 characters |
-| `description` | Optional, string, max 2000 characters |
-| `status` | Optional, string, must be "active" or "inactive" |
+**Exemplo de Requisição**:
+```bash
+curl -X POST http://localhost:9003/api/v1/customers \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer {token}" \
+  -d '{
+    "name": "Maria Santos",
+    "email": "maria.santos@example.com",
+    "phone": "11912345678",
+    "document": "52998224725",
+    "address_street": "Av Paulista",
+    "address_number": "1000",
+    "address_city": "São Paulo",
+    "address_state": "SP",
+    "address_zip_code": "01310100"
+  }'
+```
 
-> ⚠️ **Note:** The SKU field cannot be updated after product creation.
-
-#### Success Response (200 OK)
-
+**Resposta de Sucesso (201)**:
 ```json
 {
-  "message": "Product updated successfully",
+  "message": "Customer created successfully",
   "data": {
-    "id": "d91a1457-1b39-4edf-a8eb-2320f1aba8e5",
-    "name": "Laptop Dell Inspiron 15 (Updated)",
-    "sku": "LAPTOP-DELL-INSP15-001",
-    "price": 3299.99,
-    "category_id": "550e8400-e29b-41d4-a716-446655440000",
-    "barcode": "7891234567890",
-    "description": "15.6\" Full HD, Intel Core i7, 16GB RAM, 512GB SSD - Updated specs",
-    "status": "active",
-    "created_at": "2025-10-06 12:00:00",
-    "updated_at": "2025-10-06 15:30:00"
-  }
-}
-```
-
-#### Error Responses
-
-**404 Not Found**
-
-```json
-{
-  "error": "ProductNotFound",
-  "message": "Product with ID {id} not found."
-}
-```
-
-**404 Not Found** - Invalid category
-
-```json
-{
-  "error": "CategoryNotFound",
-  "message": "Category with ID {category_id} not found."
-}
-```
-
-**422 Unprocessable Entity** - Validation failed
-
-```json
-{
-  "message": "Price must be at least 0.01",
-  "errors": {
-    "price": ["Price must be at least 0.01"]
-  }
-}
-```
-
----
-
-### 5. Delete Product
-
-Delete a product. Cannot delete if there is stock available.
-
-**Endpoint:** `DELETE /api/v1/products/{id}`  
-**Authentication:** ✅ **Required** (JWT Bearer Token)
-
-#### Success Response (200 OK)
-
-```json
-{
-  "message": "Product deleted successfully"
-}
-```
-
-#### Error Responses
-
-**404 Not Found**
-
-```json
-{
-  "error": "ProductNotFound",
-  "message": "Product with ID {id} not found."
-}
-```
-
-**409 Conflict** - Product has stock
-
-```json
-{
-  "error": "ProductHasStock",
-  "message": "Cannot delete product with stock. Current quantity: 150"
-}
-```
-
-> 💡 **Business Rule:** Products can only be deleted if they have zero stock or no stock record. This prevents accidental deletion of products with inventory.
-
----
-
-## 📊 Stock Endpoints
-
-### 1. Get Stock
-
-Retrieve stock information for a product.
-
-**Endpoint:** `GET /api/v1/stock/product/{productId}`  
-**Authentication:** Not required (Public endpoint)
-
-#### Success Response (200 OK)
-
-```json
-{
-  "data": {
-    "id": "3a31181b-5e1d-42ea-b495-2a3dc1320d0b",
-    "product_id": "d91a1457-1b39-4edf-a8eb-2320f1aba8e5",
-    "quantity": 180,
-    "minimum_quantity": 10,
-    "maximum_quantity": 500,
-    "is_low_stock": false,
-    "is_depleted": false,
-    "last_movement_at": "2025-10-06 14:30:00",
-    "created_at": "2025-10-06 12:00:00",
-    "updated_at": "2025-10-06 14:30:00"
-  }
-}
-```
-
-#### Error Responses
-
-**404 Not Found**
-
-```json
-{
-  "error": "StockNotFound",
-  "message": "Stock not found for product: {productId}"
-}
-```
-
----
-
-### 2. Increase Stock
-
-Add quantity to stock (purchase, return, adjustment).
-
-**Endpoint:** `POST /api/v1/stock/product/{productId}/increase`  
-**Authentication:** ✅ **Required** (JWT Bearer Token)
-
-#### Request Body
-
-```json
-{
-  "quantity": 50,
-  "reason": "Purchase order received",
-  "reference_id": "PO-2024-001"
-}
-```
-
-#### Validation Rules
-
-| Field | Rules |
-|-------|-------|
-| `quantity` | Required, integer, min 1, max 999,999 |
-| `reason` | Required, string, min 5 characters, max 255 characters |
-| `reference_id` | Optional, string, max 100 characters |
-
-#### Success Response (200 OK)
-
-```json
-{
-  "message": "Stock increased successfully",
-  "data": {
-    "id": "3a31181b-5e1d-42ea-b495-2a3dc1320d0b",
-    "product_id": "d91a1457-1b39-4edf-a8eb-2320f1aba8e5",
-    "quantity": 230,
-    "minimum_quantity": 10,
-    "maximum_quantity": 500,
-    "is_low_stock": false,
-    "is_depleted": false,
-    "last_movement_at": "2025-10-06 15:00:00",
-    "created_at": "2025-10-06 12:00:00",
-    "updated_at": "2025-10-06 15:00:00"
-  }
-}
-```
-
-#### Error Responses
-
-**404 Not Found**
-
-```json
-{
-  "error": "StockNotFound",
-  "message": "Stock not found for product: {productId}"
-}
-```
-
-**422 Unprocessable Entity**
-
-```json
-{
-  "message": "Quantity is required",
-  "errors": {
-    "quantity": ["Quantity is required"],
-    "reason": ["Reason must be at least 5 characters"]
-  }
-}
-```
-
----
-
-### 3. Decrease Stock
-
-Remove quantity from stock (sale, damage, loss).
-
-**Endpoint:** `POST /api/v1/stock/product/{productId}/decrease`  
-**Authentication:** ✅ **Required** (JWT Bearer Token)
-
-#### Request Body
-
-```json
-{
-  "quantity": 30,
-  "reason": "Sale completed",
-  "reference_id": "SALE-2024-042"
-}
-```
-
-#### Validation Rules
-
-Same as Increase Stock.
-
-#### Success Response (200 OK)
-
-```json
-{
-  "message": "Stock decreased successfully",
-  "data": {
-    "id": "3a31181b-5e1d-42ea-b495-2a3dc1320d0b",
-    "product_id": "d91a1457-1b39-4edf-a8eb-2320f1aba8e5",
-    "quantity": 200,
-    "minimum_quantity": 10,
-    "maximum_quantity": 500,
-    "is_low_stock": false,
-    "is_depleted": false,
-    "last_movement_at": "2025-10-06 15:30:00",
-    "created_at": "2025-10-06 12:00:00",
-    "updated_at": "2025-10-06 15:30:00"
-  }
-}
-```
-
-#### Error Responses
-
-**400 Bad Request** - Insufficient stock
-
-```json
-{
-  "error": "InsufficientStock",
-  "message": "Insufficient stock: required 200, available 180"
-}
-```
-
-**404 Not Found**
-
-```json
-{
-  "error": "StockNotFound",
-  "message": "Stock not found for product: {productId}"
-}
-```
-
----
-
-### 4. Get Low Stock Products
-
-Retrieve all products with stock quantity below the minimum threshold.
-
-**Endpoint:** `GET /api/v1/stock/low-stock`  
-**Authentication:** ✅ **Required** (JWT Bearer Token)
-
-#### Success Response (200 OK)
-
-```json
-{
-  "data": [
-    {
-      "id": "3a31181b-5e1d-42ea-b495-2a3dc1320d0b",
-      "product_id": "d91a1457-1b39-4edf-a8eb-2320f1aba8e5",
-      "quantity": 5,
-      "minimum_quantity": 10,
-      "maximum_quantity": 500,
-      "is_low_stock": true,
-      "is_depleted": false,
-      "last_movement_at": "2025-10-06 15:30:00",
-      "created_at": "2025-10-06 12:00:00",
-      "updated_at": "2025-10-06 15:30:00"
+    "id": "70fca607-4b7b-45d8-b8e8-99eeaca2ae82",
+    "name": "Maria Santos",
+    "email": "maria.santos@example.com",
+    "phone": "11912345678",
+    "phone_formatted": "(11) 91234-5678",
+    "document": "52998224725",
+    "document_formatted": "529.982.247-25",
+    "document_type": "CPF",
+    "address": {
+      "street": "Av Paulista",
+      "number": "1000",
+      "complement": null,
+      "city": "São Paulo",
+      "state": "SP",
+      "zip_code": "01310100"
     },
-    {
-      "id": "7b42292c-6f2e-53fb-c606-3b4ed2431e1c",
-      "product_id": "e02b2568-2c4a-5fef-b9fc-3431g2ab9f6g",
-      "quantity": 3,
-      "minimum_quantity": 20,
-      "maximum_quantity": 200,
-      "is_low_stock": true,
-      "is_depleted": false,
-      "last_movement_at": "2025-10-06 14:00:00",
-      "created_at": "2025-10-05 10:00:00",
-      "updated_at": "2025-10-06 14:00:00"
-    }
-  ],
-  "meta": {
-    "total": 2
+    "status": "active",
+    "created_at": "2025-10-06 02:25:00",
+    "updated_at": null
   }
 }
 ```
 
-> 💡 **Business Rule:** Products are flagged as "low stock" when `quantity <= minimum_quantity` and `quantity > 0`.
+**Respostas de Erro**:
+
+**409 - Email já existe**:
+```json
+{
+  "error": "EmailAlreadyExists",
+  "message": "Email already exists: maria.santos@example.com"
+}
+```
+
+**409 - Documento já existe**:
+```json
+{
+  "error": "DocumentAlreadyExists",
+  "message": "Document already exists: 529.982.247-25"
+}
+```
+
+**422 - CPF inválido**:
+```json
+{
+  "error": "InvalidDocumentException",
+  "message": "Invalid CPF"
+}
+```
 
 ---
 
-### 5. Get Depleted Stock Products
+### 3. Buscar Cliente
 
-Retrieve all products with zero stock.
+#### `GET /v1/customers/{id}`
 
-**Endpoint:** `GET /api/v1/stock/depleted`  
-**Authentication:** ✅ **Required** (JWT Bearer Token)
+Retorna os detalhes de um cliente específico.
 
-#### Success Response (200 OK)
+**Autenticação**: Requerida (JWT)
 
+**Path Parameters**:
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| `id` | UUID | ID do cliente |
+
+**Exemplo de Requisição**:
+```bash
+curl -X GET http://localhost:9003/api/v1/customers/70fca607-4b7b-45d8-b8e8-99eeaca2ae82 \
+  -H "Authorization: Bearer {token}"
+```
+
+**Resposta de Sucesso (200)**:
+```json
+{
+  "data": {
+    "id": "70fca607-4b7b-45d8-b8e8-99eeaca2ae82",
+    "name": "Maria Santos",
+    "email": "maria.santos@example.com",
+    "phone": "11912345678",
+    "phone_formatted": "(11) 91234-5678",
+    "document": "52998224725",
+    "document_formatted": "529.982.247-25",
+    "document_type": "CPF",
+    "address": {
+      "street": "Av Paulista",
+      "number": "1000",
+      "complement": null,
+      "city": "São Paulo",
+      "state": "SP",
+      "zip_code": "01310100"
+    },
+    "status": "active",
+    "created_at": "2025-10-06 02:25:00",
+    "updated_at": null
+  }
+}
+```
+
+**Respostas de Erro**:
+
+**404 - Cliente não encontrado**:
+```json
+{
+  "error": "CustomerNotFound",
+  "message": "Customer not found with ID: 70fca607-4b7b-45d8-b8e8-99eeaca2ae82"
+}
+```
+
+---
+
+## Orders (Pedidos)
+
+### 4. Listar Pedidos
+
+#### `GET /v1/orders`
+
+Lista todos os pedidos com paginação e filtros.
+
+**Autenticação**: Requerida (JWT)
+
+**Query Parameters**:
+| Parâmetro | Tipo | Obrigatório | Descrição |
+|-----------|------|-------------|-----------|
+| `page` | integer | Não | Número da página (padrão: 1) |
+| `per_page` | integer | Não | Itens por página (padrão: 15) |
+| `status` | string | Não | Filtrar por status do pedido |
+| `payment_status` | string | Não | Filtrar por status de pagamento |
+| `customer_id` | UUID | Não | Filtrar por cliente |
+
+**Status de Pedido**:
+- `draft`: Rascunho (em criação)
+- `pending`: Pendente (aguardando processamento)
+- `confirmed`: Confirmado
+- `processing`: Em processamento
+- `shipped`: Enviado
+- `delivered`: Entregue
+- `cancelled`: Cancelado
+
+**Status de Pagamento**:
+- `pending`: Pendente
+- `paid`: Pago
+- `refunded`: Reembolsado
+- `failed`: Falhou
+
+**Exemplo de Requisição**:
+```bash
+curl -X GET "http://localhost:9003/api/v1/orders?status=confirmed&page=1" \
+  -H "Authorization: Bearer {token}"
+```
+
+**Resposta de Sucesso (200)**:
 ```json
 {
   "data": [
     {
-      "id": "8c53303d-7g3f-64gc-d717-4c5fe3542f2d",
-      "product_id": "f13c3679-3d5b-6gfg-c0gd-4542h3bc0g7h",
-      "quantity": 0,
-      "minimum_quantity": 15,
-      "maximum_quantity": 300,
-      "is_low_stock": true,
-      "is_depleted": true,
-      "last_movement_at": "2025-10-06 16:00:00",
-      "created_at": "2025-10-04 09:00:00",
-      "updated_at": "2025-10-06 16:00:00"
+      "id": "526d715b-13a4-4328-8935-b78d63cfc9ef",
+      "order_number": "ORD-2025-0002",
+      "customer_id": "70fca607-4b7b-45d8-b8e8-99eeaca2ae82",
+      "status": "confirmed",
+      "subtotal": 3999.98,
+      "discount": 5.00,
+      "total": 3994.98,
+      "payment_status": "pending",
+      "payment_method": null,
+      "notes": "Pedido via API",
+      "items_count": 1,
+      "items": [
+        {
+          "id": "abc123...",
+          "product_id": "0eb5e387-d850-442e-8c8f-80f4fcec287f",
+          "product_name": "Notebook Dell Inspiron",
+          "sku": "NOTE-DELL-001",
+          "quantity": 2,
+          "unit_price": 1999.99,
+          "subtotal": 3999.98,
+          "discount": 5.00,
+          "total": 3994.98,
+          "created_at": "2025-10-06 02:30:00",
+          "updated_at": null
+        }
+      ],
+      "confirmed_at": "2025-10-06 02:34:21",
+      "cancelled_at": null,
+      "delivered_at": null,
+      "created_at": "2025-10-06 02:25:03",
+      "updated_at": "2025-10-06 02:34:21"
     }
   ],
   "meta": {
-    "total": 1
+    "current_page": 1,
+    "per_page": 15,
+    "total": 10,
+    "last_page": 1
   }
 }
 ```
 
-> 💡 **Business Rule:** Products are flagged as "depleted" when `quantity = 0`. These products need immediate restocking.
-
-> 📊 **Use Cases:** 
-> - Automated reorder triggers
-> - Warehouse management alerts
-> - Inventory reports
-> - Supply chain notifications
-
 ---
 
-## 🚨 Error Responses
+### 5. Criar Pedido
 
-### Standard Error Format
+#### `POST /v1/orders`
 
-All errors follow this format:
+Cria um novo pedido em status `draft` (rascunho).
 
+**Autenticação**: Requerida (JWT)
+
+**Body Parameters**:
 ```json
 {
-  "error": "ErrorType",
-  "message": "Human-readable error message"
+  "customer_id": "70fca607-4b7b-45d8-b8e8-99eeaca2ae82",
+  "notes": "Pedido urgente"
 }
 ```
 
-### HTTP Status Codes
+**Validações**:
+- `customer_id`: obrigatório, UUID válido, cliente deve existir
+- `notes`: opcional, texto livre (máx. 1000 caracteres)
 
-| Code | Description | Usage |
-|------|-------------|-------|
-| 200 | OK | Successful GET, PUT, PATCH, DELETE |
-| 201 | Created | Successful POST (resource created) |
-| 400 | Bad Request | Business logic error (e.g., insufficient stock) |
-| 404 | Not Found | Resource not found |
-| 409 | Conflict | Resource conflict (e.g., duplicate SKU) |
-| 422 | Unprocessable Entity | Validation failed |
-| 500 | Internal Server Error | Server error |
-
-### Common Error Types
-
-| Error Type | HTTP Code | Description |
-|-----------|-----------|-------------|
-| `CategoryNotFound` | 404 | Category does not exist |
-| `ProductNotFound` | 404 | Product does not exist |
-| `StockNotFound` | 404 | Stock record not found |
-| `SKUAlreadyExists` | 409 | SKU is already in use |
-| `InsufficientStock` | 400 | Not enough stock for operation |
-| `ValidationException` | 422 | Input validation failed |
-
----
-
-## 📐 Business Rules
-
-### Category Management
-
-#### ✅ Allowed Operations
-- Create new categories with unique names
-- Update category name, description, or status
-- List categories with optional status filter
-- Retrieve individual categories by ID
-
-#### ❌ Restrictions
-- **Cannot delete category with products**: Categories that have associated products cannot be deleted. You must first reassign or delete all products in that category.
-- **Automatic slug generation**: Category slug is automatically generated from the name and cannot be manually set.
-
-### Product Management
-
-#### ✅ Allowed Operations
-- Create products with unique SKU
-- Update product details (name, price, description, barcode, status, category)
-- Partial updates supported (send only fields you want to change)
-- List products with filters (status, category, pagination)
-- Search products by name, SKU, or description
-
-#### ❌ Restrictions
-- **Cannot delete product with stock**: Products that have stock (quantity > 0) cannot be deleted. You must first reduce stock to zero.
-- **SKU is immutable**: Once a product is created, its SKU cannot be changed.
-- **SKU must be unique**: Duplicate SKUs are not allowed in the system.
-- **Category must exist**: If assigning a category, it must exist in the database.
-
-### Stock Management
-
-#### ✅ Allowed Operations
-- Increase stock with reason tracking
-- Decrease stock with validation
-- View current stock status
-- Monitor low stock products (quantity <= minimum)
-- Monitor depleted products (quantity = 0)
-
-#### ❌ Restrictions
-- **Cannot decrease below zero**: Stock quantity cannot be negative.
-- **Must provide reason**: All stock movements require a reason (min 5 characters).
-- **Automatic alerts**: Low stock and depletion are automatically detected and flagged.
-
-#### 🔔 Automatic Behaviors
-- **Low Stock Detection**: When `quantity <= minimum_quantity` and `quantity > 0`, product is flagged as low stock
-- **Depletion Detection**: When `quantity = 0`, product is flagged as depleted
-- **Movement Tracking**: All stock changes are logged with timestamp, reason, and reference ID
-- **Last Movement**: Stock record tracks the last movement date for audit purposes
-
-### Data Integrity
-
-- **UUID Primary Keys**: All entities use UUID v4 for globally unique identifiers
-- **Referential Integrity**: Foreign keys ensure data consistency
-- **Soft Status Changes**: Products and categories use status flags (active/inactive) instead of hard deletes
-- **Timestamp Tracking**: All entities track created_at and updated_at timestamps
-
-### Validation Rules Summary
-
-| Entity | Field | Constraint |
-|--------|-------|-----------|
-| **Category** | name | Required, 2-100 chars, unique |
-| **Category** | description | Optional, max 1000 chars |
-| **Product** | name | Required, 2-200 chars |
-| **Product** | sku | Required, 3-100 chars, uppercase/numbers/hyphens, unique |
-| **Product** | price | Required, >= 0.01, <= 9,999,999.99 |
-| **Product** | barcode | Optional, max 100 chars |
-| **Product** | description | Optional, max 2000 chars |
-| **Stock** | quantity | Required, integer, >= 0 |
-| **Stock** | minimum_quantity | Required, integer, >= 0 |
-| **Stock** | reason | Required, min 5 chars |
-
----
-
-## 📝 Request Examples
-
-### Complete Product Creation Flow
-
+**Exemplo de Requisição**:
 ```bash
-# 1. Create a category
-curl -X POST http://localhost:9002/api/v1/categories \
+curl -X POST http://localhost:9003/api/v1/orders \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer {token}" \
   -d '{
-    "name": "Electronics",
-    "description": "Electronic products"
+    "customer_id": "70fca607-4b7b-45d8-b8e8-99eeaca2ae82",
+    "notes": "Pedido via API"
   }'
+```
 
-# Response: { "data": { "id": "550e8400-...", ... } }
+**Resposta de Sucesso (201)**:
+```json
+{
+  "message": "Order created successfully",
+  "data": {
+    "id": "526d715b-13a4-4328-8935-b78d63cfc9ef",
+    "order_number": "ORD-2025-0002",
+    "customer_id": "70fca607-4b7b-45d8-b8e8-99eeaca2ae82",
+    "status": "draft",
+    "subtotal": 0,
+    "discount": 0,
+    "total": 0,
+    "payment_status": "pending",
+    "payment_method": null,
+    "notes": "Pedido via API",
+    "items_count": 0,
+    "items": [],
+    "confirmed_at": null,
+    "cancelled_at": null,
+    "delivered_at": null,
+    "created_at": "2025-10-06 02:25:03",
+    "updated_at": null
+  }
+}
+```
 
-# 2. Create a product in that category
-curl -X POST http://localhost:9002/api/v1/products \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Laptop Dell Inspiron 15",
-    "sku": "LAPTOP-DELL-001",
-    "price": 3499.99,
-    "category_id": "550e8400-...",
-    "barcode": "7891234567890"
-  }'
+**Respostas de Erro**:
 
-# Response: { "data": { "id": "d91a1457-...", ... } }
-
-# 3. Get product stock
-curl http://localhost:9002/api/v1/stock/product/d91a1457-...
-
-# 4. Increase stock
-curl -X POST http://localhost:9002/api/v1/stock/product/d91a1457-.../increase \
-  -H "Content-Type: application/json" \
-  -d '{
-    "quantity": 100,
-    "reason": "Initial stock",
-    "reference_id": "PO-INITIAL"
-  }'
-
-# 5. Decrease stock (sale)
-curl -X POST http://localhost:9002/api/v1/stock/product/d91a1457-.../decrease \
-  -H "Content-Type: application/json" \
-  -d '{
-    "quantity": 5,
-    "reason": "Customer sale",
-    "reference_id": "SALE-001"
-  }'
+**404 - Cliente não encontrado**:
+```json
+{
+  "error": "CustomerNotFound",
+  "message": "Customer not found with ID: 70fca607-4b7b-45d8-b8e8-99eeaca2ae82"
+}
 ```
 
 ---
 
-## 🔒 Security Notes
+### 6. Buscar Pedido
 
-### Current Status (v1.0.0)
-- ⚠️ **Authentication**: Not yet implemented (all endpoints public)
-- ✅ **Input Validation**: Comprehensive validation on all endpoints
-- ✅ **SQL Injection**: Protected by Eloquent ORM
-- ✅ **UUID**: Used for all IDs (no sequential integers)
+#### `GET /v1/orders/{id}`
 
-### Coming Soon
-- 🔜 JWT authentication integration with Auth Service
-- 🔜 Role-based access control (RBAC)
-- 🔜 Rate limiting
-- 🔜 API versioning (/v1, /v2)
+Retorna os detalhes de um pedido específico, incluindo todos os itens.
 
-### Best Practices
-1. **Always validate** SKUs before creating products
-2. **Use reference_id** in stock operations for traceability
-3. **Monitor** low stock alerts regularly
-4. **Track** stock movements for audit purposes
+**Autenticação**: Requerida (JWT)
+
+**Path Parameters**:
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| `id` | UUID | ID do pedido |
+
+**Exemplo de Requisição**:
+```bash
+curl -X GET http://localhost:9003/api/v1/orders/526d715b-13a4-4328-8935-b78d63cfc9ef \
+  -H "Authorization: Bearer {token}"
+```
+
+**Resposta de Sucesso (200)**:
+```json
+{
+  "data": {
+    "id": "526d715b-13a4-4328-8935-b78d63cfc9ef",
+    "order_number": "ORD-2025-0002",
+    "customer_id": "70fca607-4b7b-45d8-b8e8-99eeaca2ae82",
+    "status": "confirmed",
+    "subtotal": 3999.98,
+    "discount": 5.00,
+    "total": 3994.98,
+    "payment_status": "pending",
+    "payment_method": null,
+    "notes": "Pedido via API",
+    "items_count": 1,
+    "items": [
+      {
+        "id": "abc123...",
+        "product_id": "0eb5e387-d850-442e-8c8f-80f4fcec287f",
+        "product_name": "Notebook Dell Inspiron",
+        "sku": "NOTE-DELL-001",
+        "quantity": 2,
+        "unit_price": 1999.99,
+        "subtotal": 3999.98,
+        "discount": 5.00,
+        "total": 3994.98,
+        "created_at": "2025-10-06 02:30:00",
+        "updated_at": null
+      }
+    ],
+    "confirmed_at": "2025-10-06 02:34:21",
+    "cancelled_at": null,
+    "delivered_at": null,
+    "created_at": "2025-10-06 02:25:03",
+    "updated_at": "2025-10-06 02:34:21"
+  }
+}
+```
+
+**Respostas de Erro**:
+
+**404 - Pedido não encontrado**:
+```json
+{
+  "error": "OrderNotFound",
+  "message": "Order not found with ID: 526d715b-13a4-4328-8935-b78d63cfc9ef"
+}
+```
 
 ---
 
-## 📚 Additional Resources
+### 7. Adicionar Item ao Pedido
 
-- **Postman Collection**: `postman-collection.json`
-- **Architecture Documentation**: `ARCHITECTURE.md`
-- **Test Suite**: `tests/` directory
-- **Source Code**: Clean Architecture with DDD patterns
+#### `POST /v1/orders/{id}/items`
+
+Adiciona um item ao pedido. O produto é buscado automaticamente no **Inventory Service**.
+
+**Autenticação**: Requerida (JWT)
+
+**⚠️ Importante**: O pedido deve estar em status `draft` para adicionar itens.
+
+**Path Parameters**:
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| `id` | UUID | ID do pedido |
+
+**Body Parameters**:
+```json
+{
+  "product_id": "0eb5e387-d850-442e-8c8f-80f4fcec287f",
+  "quantity": 2,
+  "discount": 5.00
+}
+```
+
+**Validações**:
+- `product_id`: obrigatório, UUID válido, produto deve existir no Inventory
+- `quantity`: obrigatório, inteiro >= 1
+- `discount`: opcional, decimal >= 0
+
+**Exemplo de Requisição**:
+```bash
+curl -X POST http://localhost:9003/api/v1/orders/526d715b-13a4-4328-8935-b78d63cfc9ef/items \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer {token}" \
+  -d '{
+    "product_id": "0eb5e387-d850-442e-8c8f-80f4fcec287f",
+    "quantity": 2,
+    "discount": 5.00
+  }'
+```
+
+**Resposta de Sucesso (200)**:
+```json
+{
+  "message": "Item added to order successfully",
+  "data": {
+    "id": "526d715b-13a4-4328-8935-b78d63cfc9ef",
+    "order_number": "ORD-2025-0002",
+    "customer_id": "70fca607-4b7b-45d8-b8e8-99eeaca2ae82",
+    "status": "draft",
+    "subtotal": 3999.98,
+    "discount": 5.00,
+    "total": 3994.98,
+    "payment_status": "pending",
+    "payment_method": null,
+    "notes": "Pedido via API",
+    "items_count": 1,
+    "items": [
+      {
+        "id": "abc123...",
+        "product_id": "0eb5e387-d850-442e-8c8f-80f4fcec287f",
+        "product_name": "Notebook Dell Inspiron",
+        "sku": "NOTE-DELL-001",
+        "quantity": 2,
+        "unit_price": 1999.99,
+        "subtotal": 3999.98,
+        "discount": 5.00,
+        "total": 3994.98,
+        "created_at": "2025-10-06 02:30:00",
+        "updated_at": null
+      }
+    ],
+    "confirmed_at": null,
+    "cancelled_at": null,
+    "delivered_at": null,
+    "created_at": "2025-10-06 02:25:03",
+    "updated_at": "2025-10-06 02:30:00"
+  }
+}
+```
+
+**Respostas de Erro**:
+
+**404 - Produto não encontrado**:
+```json
+{
+  "error": "ProductNotFound",
+  "message": "Product not found in Inventory Service: 0eb5e387-d850-442e-8c8f-80f4fcec287f"
+}
+```
+
+**422 - Pedido não está em draft**:
+```json
+{
+  "error": "DomainError",
+  "message": "Cannot add items to a non-draft order"
+}
+```
+
+**422 - Produto já existe no pedido**:
+```json
+{
+  "error": "DomainError",
+  "message": "Product already exists in the order. Update quantity instead."
+}
+```
 
 ---
 
-**Last Updated:** 2025-10-06  
-**API Version:** 1.0.0  
-**Service Status:** ✅ Production Ready
+### 8. Confirmar Pedido
+
+#### `POST /v1/orders/{id}/confirm`
+
+Confirma o pedido, mudando seu status de `draft` para `pending`.
+
+**Autenticação**: Requerida (JWT)
+
+**⚠️ Importante**: 
+- O pedido deve estar em status `draft`
+- O pedido deve ter pelo menos 1 item
+
+**Path Parameters**:
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| `id` | UUID | ID do pedido |
+
+**Exemplo de Requisição**:
+```bash
+curl -X POST http://localhost:9003/api/v1/orders/526d715b-13a4-4328-8935-b78d63cfc9ef/confirm \
+  -H "Authorization: Bearer {token}"
+```
+
+**Resposta de Sucesso (200)**:
+```json
+{
+  "message": "Order confirmed successfully",
+  "data": {
+    "id": "526d715b-13a4-4328-8935-b78d63cfc9ef",
+    "order_number": "ORD-2025-0002",
+    "customer_id": "70fca607-4b7b-45d8-b8e8-99eeaca2ae82",
+    "status": "confirmed",
+    "subtotal": 3999.98,
+    "discount": 5.00,
+    "total": 3994.98,
+    "payment_status": "pending",
+    "payment_method": null,
+    "notes": "Pedido via API",
+    "items_count": 1,
+    "items": [...],
+    "confirmed_at": "2025-10-06 02:34:21",
+    "cancelled_at": null,
+    "delivered_at": null,
+    "created_at": "2025-10-06 02:25:03",
+    "updated_at": "2025-10-06 02:34:21"
+  }
+}
+```
+
+**Respostas de Erro**:
+
+**422 - Pedido não está em draft**:
+```json
+{
+  "error": "DomainError",
+  "message": "Only draft orders can be confirmed."
+}
+```
+
+**422 - Pedido vazio**:
+```json
+{
+  "error": "DomainError",
+  "message": "Cannot confirm an empty order."
+}
+```
+
+---
+
+### 9. Cancelar Pedido
+
+#### `POST /v1/orders/{id}/cancel`
+
+Cancela um pedido, mudando seu status para `cancelled`.
+
+**Autenticação**: Requerida (JWT)
+
+**⚠️ Importante**: Não é possível cancelar pedidos já cancelados ou entregues.
+
+**Path Parameters**:
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| `id` | UUID | ID do pedido |
+
+**Body Parameters**:
+```json
+{
+  "reason": "Cliente desistiu da compra"
+}
+```
+
+**Validações**:
+- `reason`: opcional, texto livre (máx. 500 caracteres)
+
+**Exemplo de Requisição**:
+```bash
+curl -X POST http://localhost:9003/api/v1/orders/352e52e8-851a-44c9-bdcc-37b03ab72931/cancel \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer {token}" \
+  -d '{
+    "reason": "Cliente desistiu da compra"
+  }'
+```
+
+**Resposta de Sucesso (200)**:
+```json
+{
+  "message": "Order cancelled successfully",
+  "data": {
+    "id": "352e52e8-851a-44c9-bdcc-37b03ab72931",
+    "order_number": "ORD-2025-0003",
+    "customer_id": "70fca607-4b7b-45d8-b8e8-99eeaca2ae82",
+    "status": "cancelled",
+    "subtotal": 0,
+    "discount": 0,
+    "total": 0,
+    "payment_status": "pending",
+    "payment_method": null,
+    "notes": "Pedido para cancelar\nCancellation Reason: Cliente desistiu da compra",
+    "items_count": 0,
+    "items": [],
+    "confirmed_at": null,
+    "cancelled_at": "2025-10-06 02:34:21",
+    "delivered_at": null,
+    "created_at": "2025-10-06 02:34:20",
+    "updated_at": "2025-10-06 02:34:21"
+  }
+}
+```
+
+**Respostas de Erro**:
+
+**422 - Pedido já cancelado ou entregue**:
+```json
+{
+  "error": "DomainError",
+  "message": "Cannot cancel an already cancelled or delivered order."
+}
+```
+
+---
+
+## Fluxo Completo de Venda
+
+### Exemplo: Criando uma venda do início ao fim
+
+```bash
+# 1. Login no Auth Service
+TOKEN=$(curl -s -X POST http://localhost:9001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@example.com","password":"senha123"}' | jq -r '.data.access_token')
+
+# 2. Criar Cliente
+CUSTOMER=$(curl -s -X POST http://localhost:9003/api/v1/customers \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "name": "João Silva",
+    "email": "joao@example.com",
+    "phone": "11987654321",
+    "document": "11144477735",
+    "address_street": "Rua ABC",
+    "address_number": "100",
+    "address_city": "São Paulo",
+    "address_state": "SP",
+    "address_zip_code": "01234567"
+  }')
+
+CUSTOMER_ID=$(echo $CUSTOMER | jq -r '.data.id')
+
+# 3. Criar Pedido (draft)
+ORDER=$(curl -s -X POST http://localhost:9003/api/v1/orders \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d "{\"customer_id\": \"$CUSTOMER_ID\", \"notes\": \"Pedido urgente\"}")
+
+ORDER_ID=$(echo $ORDER | jq -r '.data.id')
+
+# 4. Buscar produto no Inventory
+PRODUCT_ID=$(curl -s http://localhost:9002/api/v1/products | jq -r '.data[0].id')
+
+# 5. Adicionar item ao pedido
+curl -s -X POST "http://localhost:9003/api/v1/orders/$ORDER_ID/items" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d "{\"product_id\": \"$PRODUCT_ID\", \"quantity\": 2, \"discount\": 10.00}"
+
+# 6. Confirmar pedido
+curl -s -X POST "http://localhost:9003/api/v1/orders/$ORDER_ID/confirm" \
+  -H "Authorization: Bearer $TOKEN"
+
+# 7. Consultar pedido final
+curl -s -X GET "http://localhost:9003/api/v1/orders/$ORDER_ID" \
+  -H "Authorization: Bearer $TOKEN" | jq
+```
+
+---
+
+## Códigos de Status HTTP
+
+| Código | Descrição |
+|--------|-----------|
+| `200` | Sucesso |
+| `201` | Recurso criado com sucesso |
+| `400` | Requisição inválida |
+| `401` | Não autenticado |
+| `404` | Recurso não encontrado |
+| `409` | Conflito (email/documento duplicado) |
+| `422` | Erro de validação ou domínio |
+| `500` | Erro interno do servidor |
+
+---
+
+## Validações de Domínio
+
+### CPF e CNPJ
+
+O sistema valida automaticamente CPF e CNPJ brasileiros:
+
+**CPF**:
+- 11 dígitos numéricos
+- Dígitos verificadores válidos
+- Não aceita sequências (111.111.111-11, etc)
+
+**CNPJ**:
+- 14 dígitos numéricos
+- Dígitos verificadores válidos
+
+**Formatos aceitos**:
+- Apenas números: `11144477735` ou `12345678000195`
+- Com formatação: `111.444.777-35` ou `12.345.678/0001-95`
+
+---
+
+## Notas Importantes
+
+### Integração com Inventory Service
+
+- Ao adicionar um item ao pedido via `POST /v1/orders/{id}/items`, o sistema busca automaticamente as informações do produto no **Inventory Service**
+- São copiados: nome, SKU e preço (snapshot no momento da venda)
+- Se o produto não existir no Inventory, retorna erro 404
+
+### OrderNumber (Número do Pedido)
+
+- Gerado automaticamente no formato `ORD-YYYY-NNNN`
+- `YYYY`: Ano atual
+- `NNNN`: Sequencial incremental (reinicia a cada ano)
+- Exemplo: `ORD-2025-0001`, `ORD-2025-0002`, etc.
+
+### Cálculo de Totais
+
+- `subtotal` = soma de (unit_price × quantity) de todos os itens
+- `total` = subtotal - discount total
+- Recalculado automaticamente ao adicionar/remover itens
+
+---
+
+## Suporte
+
+Para mais informações ou suporte:
+- **Documentação do Projeto**: `/docs`
+- **Health Check**: `GET /health`
+- **Postman Collection**: Disponível em `/postman-collection.json`
