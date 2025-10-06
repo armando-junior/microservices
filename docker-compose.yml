@@ -27,6 +27,7 @@ volumes:
   # Services
   auth-service-vendor:
   inventory-service-vendor:
+  sales-service-vendor:
 
 services:
   # ==========================================
@@ -350,6 +351,71 @@ services:
       - microservices-net
     depends_on:
       inventory-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  sales-service:
+    build:
+      context: ./services/sales-service
+      dockerfile: Dockerfile.dev
+    container_name: sales-service
+    environment:
+      APP_NAME: "Sales Service"
+      APP_ENV: local
+      APP_KEY: base64:S85BSo5qgM8JEdEXBjyWIHjeHvBLNNIPYsgJp0Ud9NE=
+      APP_DEBUG: "true"
+      APP_URL: http://sales-service:8000
+      
+      # Database
+      DB_CONNECTION: pgsql
+      DB_HOST: sales-db
+      DB_PORT: 5432
+      DB_DATABASE: sales_db
+      DB_USERNAME: sales_user
+      DB_PASSWORD: sales_pass
+      
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PASSWORD: redis_password
+      REDIS_PORT: 6379
+      CACHE_STORE: array
+      SESSION_DRIVER: file
+      
+      # RabbitMQ
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: admin
+      RABBITMQ_PASSWORD: admin123
+      RABBITMQ_VHOST: /
+      
+      # JWT
+      JWT_SECRET: please-change-this-secret-key-in-production-use-openssl-rand-base64-32
+      JWT_TTL: 3600
+      JWT_ALGO: HS256
+      JWT_ISSUER: auth-service
+      
+      # Logging
+      LOG_CHANNEL: stack
+      LOG_LEVEL: info
+    ports:
+      - "9003:8000"
+    volumes:
+      - ./services/sales-service:/var/www
+      - sales-service-vendor:/var/www/vendor
+    networks:
+      - microservices-net
+    depends_on:
+      sales-db:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
