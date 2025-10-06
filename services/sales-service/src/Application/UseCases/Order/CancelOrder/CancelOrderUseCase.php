@@ -33,7 +33,7 @@ final class CancelOrderUseCase
         $order = $this->orderRepository->findById($id);
         
         if (!$order) {
-            throw OrderNotFoundException::withId($dto->orderId);
+            throw OrderNotFoundException::forId($dto->orderId);
         }
 
         // 2. Cancelar pedido

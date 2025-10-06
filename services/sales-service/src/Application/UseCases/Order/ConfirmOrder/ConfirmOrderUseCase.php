@@ -34,7 +34,7 @@ final class ConfirmOrderUseCase
         $order = $this->orderRepository->findById($id);
         
         if (!$order) {
-            throw OrderNotFoundException::withId($orderId);
+            throw OrderNotFoundException::forId($orderId);
         }
 
         // 2. Confirmar pedido
