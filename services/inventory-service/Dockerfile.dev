@@ -1,13 +1,13 @@
 # ==============================================================================
-# Auth Service - Development Dockerfile
+# Inventory Service - Development Dockerfile
 # Simplified for development with hot-reload support
 # ==============================================================================
 
 FROM php:8.3-cli-alpine
 
 # Metadata
-LABEL maintainer="auth-service" \
-      description="Authentication Microservice - Development" \
+LABEL maintainer="inventory-service" \
+      description="Inventory Management Microservice - Development" \
       version="1.0.0-dev"
 
 # Set working directory
