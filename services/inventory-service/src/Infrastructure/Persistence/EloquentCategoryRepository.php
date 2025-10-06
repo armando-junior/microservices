@@ -42,15 +42,48 @@ final class EloquentCategoryRepository implements CategoryRepositoryInterface
     }
 
     /**
+     * Busca categoria por slug
+     */
+    public function findBySlug(string $slug): ?Category
+    {
+        $model = CategoryModel::where('slug', $slug)->first();
+        
+        return $model ? $this->toDomainEntity($model) : null;
+    }
+
+    /**
+     * Verifica se slug existe
+     */
+    public function existsSlug(string $slug): bool
+    {
+        return CategoryModel::where('slug', $slug)->exists();
+    }
+
+    /**
      * Lista todas as categorias
      */
-    public function findAll(string $status = 'active'): array
+    public function list(array $filters = []): array
     {
-        $models = CategoryModel::where('status', $status)
-            ->orderBy('name', 'asc')
-            ->get();
+        $query = CategoryModel::query();
+
+        if (isset($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        $models = $query->orderBy('name', 'asc')->get();
 
         return $models->map(fn($model) => $this->toDomainEntity($model))->all();
+    }
+
+    /**
+     * Conta produtos de uma categoria
+     */
+    public function countProducts(CategoryId $id): int
+    {
+        return CategoryModel::where('id', $id->value())
+            ->withCount('products')
+            ->first()
+            ?->products_count ?? 0;
     }
 
     /**

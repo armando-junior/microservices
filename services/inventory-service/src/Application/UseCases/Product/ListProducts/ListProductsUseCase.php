@@ -38,7 +38,7 @@ final class ListProductsUseCase
             $filters['category_id'] = $categoryId;
         }
         
-        $products = $this->productRepository->findAll($filters, $page, $perPage);
+        $products = $this->productRepository->list($filters, $page, $perPage);
         
         return array_map(
             fn($product) => ProductDTO::fromEntity($product),

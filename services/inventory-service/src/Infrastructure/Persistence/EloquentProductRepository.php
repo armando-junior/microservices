@@ -68,7 +68,7 @@ final class EloquentProductRepository implements ProductRepositoryInterface
     /**
      * Lista produtos com filtros
      */
-    public function findAll(array $filters = [], int $page = 1, int $perPage = 15): array
+    public function list(array $filters = [], int $page = 1, int $perPage = 15): array
     {
         $query = ProductModel::query();
 
@@ -82,6 +82,22 @@ final class EloquentProductRepository implements ProductRepositoryInterface
 
         $models = $query
             ->orderBy('created_at', 'desc')
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->get();
+
+        return $models->map(fn($model) => $this->toDomainEntity($model))->all();
+    }
+
+    /**
+     * Busca produtos por termo
+     */
+    public function search(string $term, int $page = 1, int $perPage = 15): array
+    {
+        $models = ProductModel::where('name', 'ILIKE', "%{$term}%")
+            ->orWhere('sku', 'ILIKE', "%{$term}%")
+            ->orWhere('description', 'ILIKE', "%{$term}%")
+            ->orderBy('name', 'asc')
             ->skip(($page - 1) * $perPage)
             ->take($perPage)
             ->get();
