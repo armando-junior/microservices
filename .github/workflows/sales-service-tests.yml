@@ -1,0 +1,154 @@
+name: Sales Service - Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'services/sales-service/**'
+      - '.github/workflows/sales-service-tests.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'services/sales-service/**'
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv
+          coverage: xdebug
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: services/sales-service/vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install Dependencies
+        working-directory: services/sales-service
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run Unit Tests
+        working-directory: services/sales-service
+        run: php vendor/bin/phpunit tests/Unit --testdox
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv
+          coverage: xdebug
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: services/sales-service/vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install Dependencies
+        working-directory: services/sales-service
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run Integration Tests
+        working-directory: services/sales-service
+        run: php vendor/bin/phpunit tests/Integration --testdox
+
+  feature-tests:
+    name: Feature Tests (HTTP API)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv
+          coverage: xdebug
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: services/sales-service/vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install Dependencies
+        working-directory: services/sales-service
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run Feature Tests
+        working-directory: services/sales-service
+        run: php vendor/bin/phpunit tests/Feature --testdox
+
+  code-coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv
+          coverage: xdebug
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: services/sales-service/vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install Dependencies
+        working-directory: services/sales-service
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run Tests with Coverage
+        working-directory: services/sales-service
+        run: php -d xdebug.mode=coverage vendor/bin/phpunit --coverage-clover=coverage/clover.xml --coverage-text
+
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: services/sales-service/coverage/clover.xml
+          flags: sales-service
+          name: sales-service-coverage
+
+  all-tests:
+    name: All Tests Summary
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, feature-tests]
+    
+    steps:
+      - name: All tests passed
+        run: echo "✅ All Sales Service tests passed successfully!"
+

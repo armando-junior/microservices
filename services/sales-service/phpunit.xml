@@ -21,6 +21,13 @@
             <directory>src</directory>
         </include>
     </source>
+    <coverage>
+        <report>
+            <html outputDirectory="coverage/html" lowUpperBound="50" highLowerBound="80"/>
+            <text outputFile="coverage/coverage.txt" showOnlySummary="true"/>
+            <clover outputFile="coverage/clover.xml"/>
+        </report>
+    </coverage>
     <php>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>

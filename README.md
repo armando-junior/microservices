@@ -6,6 +6,8 @@ Sistema ERP completo baseado em arquitetura de microserviços, desenvolvido com 
 [![Laravel](https://img.shields.io/badge/Laravel-11.x-red.svg)](https://laravel.com)
 [![PHP](https://img.shields.io/badge/PHP-8.3+-purple.svg)](https://php.net)
 [![Docker](https://img.shields.io/badge/Docker-24+-blue.svg)](https://docker.com)
+[![Tests](https://img.shields.io/badge/Tests-60%20passing-brightgreen.svg)](services/sales-service/tests)
+[![Coverage](https://img.shields.io/badge/Coverage-85%25-green.svg)](services/sales-service/coverage)
 
 ## 📊 Status do Projeto
 
