@@ -1,0 +1,17 @@
+FROM php:8.3-cli-alpine
+
+# Install system dependencies and PHP extensions
+RUN apk add --no-cache \
+    postgresql-dev \
+    && docker-php-ext-install pdo pdo_pgsql
+
+WORKDIR /var/www
+
+# Copy application
+COPY . .
+
+# Install composer dependencies if needed
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+CMD ["php", "artisan", "migrate", "--force"]
+
