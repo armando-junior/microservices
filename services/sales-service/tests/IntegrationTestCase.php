@@ -11,18 +11,13 @@ use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
  * Integration Test Case
  * 
  * Base class para testes de integração que usam banco de dados.
+ * 
+ * Note: RefreshDatabase trait handles database migrations automatically.
+ * Do NOT call migrate:fresh manually as it causes VACUUM errors in CI.
  */
 abstract class IntegrationTestCase extends BaseTestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        
-        // Run migrations
-        $this->artisan('migrate:fresh');
-    }
 
     /**
      * Creates the application.

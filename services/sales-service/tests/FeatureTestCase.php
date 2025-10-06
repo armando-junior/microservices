@@ -12,6 +12,9 @@ use Firebase\JWT\JWT;
  * Feature Test Case
  * 
  * Base class para testes de feature (HTTP endpoints).
+ * 
+ * Note: RefreshDatabase trait handles database migrations automatically.
+ * Do NOT call migrate:fresh manually as it causes VACUUM errors in CI.
  */
 abstract class FeatureTestCase extends BaseTestCase
 {
@@ -22,9 +25,6 @@ abstract class FeatureTestCase extends BaseTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
-        // Run migrations
-        $this->artisan('migrate:fresh');
         
         // Generate a valid JWT token for tests
         $this->jwtToken = $this->generateTestJWT();
