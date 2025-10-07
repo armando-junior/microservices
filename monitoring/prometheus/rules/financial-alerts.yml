@@ -1,0 +1,185 @@
+groups:
+  - name: financial_service_alerts
+    interval: 30s
+    rules:
+      # ==============================================
+      # CRITICAL ALERTS
+      # ==============================================
+      
+      - alert: FinancialServiceDown
+        expr: up{job="financial-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: financial
+        annotations:
+          summary: "Financial Service is down"
+          description: "Financial Service has been down for more than 1 minute."
+          
+      - alert: FinancialServiceHighErrorRate
+        expr: rate(financial_http_errors_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: critical
+          service: financial
+        annotations:
+          summary: "High error rate in Financial Service"
+          description: "Financial Service is experiencing {{ $value }} errors per second (threshold: 10/s)"
+          
+      - alert: FinancialDatabaseDown
+        expr: up{job="postgres-financial"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: financial
+        annotations:
+          summary: "Financial Database is down"
+          description: "PostgreSQL database for Financial Service has been down for more than 1 minute."
+
+      # ==============================================
+      # WARNING ALERTS
+      # ==============================================
+      
+      - alert: FinancialServiceHighResponseTime
+        expr: rate(financial_http_request_duration_seconds[5m]) / rate(financial_http_requests_total[5m]) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: financial
+        annotations:
+          summary: "High response time in Financial Service"
+          description: "Average response time is {{ $value }}s (threshold: 2s)"
+          
+      - alert: FinancialServiceHighMemoryUsage
+        expr: financial_php_memory_usage_bytes > 536870912
+        for: 5m
+        labels:
+          severity: warning
+          service: financial
+        annotations:
+          summary: "High memory usage in Financial Service"
+          description: "Financial Service is using {{ $value | humanize }}B of memory (threshold: 512MB)"
+
+      # ==============================================
+      # BUSINESS ALERTS
+      # ==============================================
+      
+      - alert: FinancialHighAccountsPayableVolume
+        expr: rate(financial_accounts_payable_created_total[15m]) > 50
+        for: 5m
+        labels:
+          severity: warning
+          service: financial
+          type: business
+        annotations:
+          summary: "High volume of accounts payable creation"
+          description: "Creating {{ $value }} accounts payable per second (threshold: 50/s). Possible data entry error or system issue."
+          
+      - alert: FinancialHighPayableAmount
+        expr: increase(financial_accounts_payable_amount_total[1h]) > 1000000
+        for: 5m
+        labels:
+          severity: info
+          service: financial
+          type: business
+        annotations:
+          summary: "High total amount in accounts payable"
+          description: "Total accounts payable increased by R$ {{ $value | humanize }} in the last hour (threshold: R$ 1M)"
+          
+      - alert: FinancialHighReceivableAmount
+        expr: increase(financial_accounts_receivable_amount_total[1h]) > 1000000
+        for: 5m
+        labels:
+          severity: info
+          service: financial
+          type: business
+        annotations:
+          summary: "High total amount in accounts receivable"
+          description: "Total accounts receivable increased by R$ {{ $value | humanize }} in the last hour (threshold: R$ 1M)"
+          
+      - alert: FinancialNoAccountsPayableActivity
+        expr: increase(financial_accounts_payable_created_total[1h]) == 0
+        for: 4h
+        labels:
+          severity: info
+          service: financial
+          type: business
+        annotations:
+          summary: "No accounts payable activity"
+          description: "No accounts payable have been created in the last 4 hours. This might be normal outside business hours."
+          
+      - alert: FinancialPayableReceivableImbalance
+        expr: |
+          (
+            increase(financial_accounts_receivable_amount_total[24h]) -
+            increase(financial_accounts_payable_amount_total[24h])
+          ) < -500000
+        for: 1h
+        labels:
+          severity: warning
+          service: financial
+          type: business
+        annotations:
+          summary: "Significant imbalance between payables and receivables"
+          description: "Accounts payable exceed receivables by R$ {{ $value | humanize }} in the last 24h (threshold: R$ 500K)"
+
+      # ==============================================
+      # OPERATIONAL ALERTS
+      # ==============================================
+      
+      - alert: FinancialServiceLowRequestRate
+        expr: rate(financial_http_requests_total[5m]) < 0.1
+        for: 10m
+        labels:
+          severity: info
+          service: financial
+        annotations:
+          summary: "Low request rate in Financial Service"
+          description: "Financial Service is receiving less than 0.1 requests per second. Service might be unused or inaccessible."
+          
+      - alert: FinancialSupplierCreationSpike
+        expr: rate(financial_suppliers_created_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: financial
+          type: business
+        annotations:
+          summary: "Unusual spike in supplier creation"
+          description: "Creating {{ $value }} suppliers per second (threshold: 10/s). Possible bulk import or data entry issue."
+          
+      - alert: FinancialCategoryCreationSpike
+        expr: rate(financial_categories_created_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: info
+          service: financial
+          type: business
+        annotations:
+          summary: "Unusual spike in category creation"
+          description: "Creating {{ $value }} categories per second (threshold: 5/s). Possible setup or migration in progress."
+
+      # ==============================================
+      # INFRASTRUCTURE ALERTS
+      # ==============================================
+      
+      - alert: FinancialDatabaseHighConnections
+        expr: pg_stat_activity_count{datname="financial_db"} > 50
+        for: 5m
+        labels:
+          severity: warning
+          service: financial
+        annotations:
+          summary: "High number of database connections"
+          description: "Financial database has {{ $value }} active connections (threshold: 50)"
+          
+      - alert: FinancialDatabaseSlowQueries
+        expr: rate(pg_stat_database_tup_fetched{datname="financial_db"}[5m]) < 100
+        for: 10m
+        labels:
+          severity: info
+          service: financial
+        annotations:
+          summary: "Database queries might be slow"
+          description: "Financial database is fetching less than 100 rows per second. Possible query performance issue."
+
