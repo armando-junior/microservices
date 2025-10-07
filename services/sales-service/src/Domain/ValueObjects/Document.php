@@ -67,15 +67,28 @@ final class Document
             throw new InvalidDocumentException('Invalid CPF: sequence of same digits');
         }
 
-        // Validação dos dígitos verificadores
-        for ($t = 9; $t < 11; $t++) {
-            for ($d = 0, $c = 0; $c < $t; $c++) {
-                $d += intval($this->value[$c]) * (($t + 1) - $c);
-            }
-            $d = ((10 * $d) % 11) % 10;
-            if (intval($this->value[$c]) != $d) {
-                throw new InvalidDocumentException('Invalid CPF');
-            }
+        // Valida o primeiro dígito verificador (posição 9)
+        $sum = 0;
+        for ($i = 0; $i < 9; $i++) {
+            $sum += intval($this->value[$i]) * (10 - $i);
+        }
+        $remainder = $sum % 11;
+        $digit1 = ($remainder < 2) ? 0 : (11 - $remainder);
+        
+        if (intval($this->value[9]) != $digit1) {
+            throw new InvalidDocumentException('Invalid CPF');
+        }
+
+        // Valida o segundo dígito verificador (posição 10)
+        $sum = 0;
+        for ($i = 0; $i < 10; $i++) {
+            $sum += intval($this->value[$i]) * (11 - $i);
+        }
+        $remainder = $sum % 11;
+        $digit2 = ($remainder < 2) ? 0 : (11 - $remainder);
+        
+        if (intval($this->value[10]) != $digit2) {
+            throw new InvalidDocumentException('Invalid CPF');
         }
     }
 
