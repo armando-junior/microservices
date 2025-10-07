@@ -61,11 +61,11 @@ class ListCustomersUseCaseTest extends IntegrationTestCase
     {
         // Create 5 customers with unique and VALID CPFs/CNPJs
         $documents = [
-            '11144477735',        // Valid CPF
-            '52998224725',        // Valid CPF  
+            '11144477735',        // Valid CPF (used in other tests)
+            '52998224725',        // Valid CPF (used in other tests)
             '40442820135',        // Valid CPF
-            '84434916000',        // Valid CPF
-            '11222333000181'      // Valid CNPJ (from other test)
+            '39053344705',        // Valid CPF (corrected)
+            '11222333000181'      // Valid CNPJ (used in other tests)
         ];
         $names = ['Customer One', 'Customer Two', 'Customer Three', 'Customer Four', 'Customer Five'];
         
