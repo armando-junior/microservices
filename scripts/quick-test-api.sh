@@ -2,7 +2,7 @@
 
 # Script de teste rápido simplificado
 
-API_URL="http://localhost:9000"
+API_URL="http://localhost:8000"
 EMAIL="quicktest$(date +%s)@example.com"
 
 echo "=== Quick API Test ==="

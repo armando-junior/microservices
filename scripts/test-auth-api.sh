@@ -4,7 +4,7 @@
 
 set -e
 
-API_URL="${API_URL:-http://localhost:9000}"
+API_URL="${API_URL:-http://localhost:8000}"
 COLOR_GREEN='\033[0;32m'
 COLOR_RED='\033[0;31m'
 COLOR_YELLOW='\033[1;33m'

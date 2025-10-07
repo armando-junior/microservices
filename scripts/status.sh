@@ -37,11 +37,21 @@ check_health() {
     fi
 }
 
-# Verificar serviços
-check_health "Kong API Gateway" "http://localhost:8001/status"
+# Verificar microserviços
+check_health "Auth Service" "http://localhost:8000/api/health"
+check_health "Inventory Service" "http://localhost:8001/api/health"
+check_health "Sales Service" "http://localhost:8002/api/health"
+
+# Verificar infraestrutura
 check_health "RabbitMQ" "http://localhost:15672"
+check_health "Redis" "http://localhost:6379"
+
+# Verificar monitoring
 check_health "Prometheus" "http://localhost:9090/-/healthy"
 check_health "Grafana" "http://localhost:3000/api/health"
+check_health "Alertmanager" "http://localhost:9093/-/healthy"
+
+# Verificar observability
 check_health "Jaeger" "http://localhost:16686"
 check_health "Elasticsearch" "http://localhost:9200/_cluster/health"
 check_health "Kibana" "http://localhost:5601/api/status"
