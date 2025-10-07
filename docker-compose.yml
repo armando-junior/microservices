@@ -28,6 +28,7 @@ volumes:
   auth-service-vendor:
   inventory-service-vendor:
   sales-service-vendor:
+  financial-service-vendor:
   
   # Additional Monitoring
   alertmanager-data:
@@ -228,7 +229,9 @@ services:
     environment:
       POSTGRES_DB: financial_db
       POSTGRES_USER: financial_user
-      POSTGRES_PASSWORD: financial_pass
+      POSTGRES_PASSWORD: financial_password
+    ports:
+      - "5436:5432"
     volumes:
       - financial-db-data:/var/lib/postgresql/data
     networks:
@@ -426,6 +429,70 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  # ==========================================
+  # FINANCIAL SERVICE
+  # ==========================================
+  
+  financial-service:
+    build:
+      context: ./services/financial-service
+      dockerfile: Dockerfile
+    container_name: financial-service
+    environment:
+      APP_NAME: "Financial Service"
+      APP_ENV: production
+      APP_KEY: base64:NXFcj1wBD7jFPOF5T4BJwSLiOU0IBz1rzs9dTTDVUiM=
+      APP_DEBUG: "false"
+      APP_URL: http://financial-service:8000
+      
+      # Database
+      DB_CONNECTION: pgsql
+      DB_HOST: financial-db
+      DB_PORT: 5432
+      DB_DATABASE: financial_db
+      DB_USERNAME: financial_user
+      DB_PASSWORD: financial_password
+      
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PASSWORD: redis_password
+      REDIS_PORT: 6379
+      REDIS_DB: 3
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      
+      # RabbitMQ
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: admin
+      RABBITMQ_PASSWORD: admin123
+      RABBITMQ_VHOST: /
+      RABBITMQ_QUEUE: financial_queue
+      RABBITMQ_EXCHANGE: microservices
+      RABBITMQ_EXCHANGE_TYPE: topic
+      
+      # Logging
+      LOG_CHANNEL: stack
+      LOG_LEVEL: info
+    ports:
+      - "9004:8000"
+    networks:
+      - microservices-net
+    depends_on:
+      financial-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -1,0 +1,14 @@
+/vendor/
+node_modules/
+/storage/*.key
+/.env
+Homestead.yaml
+Homestead.json
+/.vagrant
+.phpunit.result.cache
+.DS_Store
+Thumbs.db
+
+# Coverage reports
+/coverage/
+.phpunit.cache
