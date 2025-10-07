@@ -764,3 +764,16 @@ services:
       - sales-db
     restart: unless-stopped
 
+  postgres-exporter-financial:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: postgres-exporter-financial
+    environment:
+      - DATA_SOURCE_NAME=postgresql://financial_user:financial_password@financial-db:5432/financial_db?sslmode=disable
+    ports:
+      - "9190:9187"
+    networks:
+      - microservices-net
+    depends_on:
+      - financial-db
+    restart: unless-stopped
+

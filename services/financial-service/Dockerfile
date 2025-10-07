@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y \
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Instalar extensões PHP
-RUN docker-php-ext-install pdo pdo_pgsql mbstring exif pcntl bcmath intl
+RUN docker-php-ext-install pdo pdo_pgsql mbstring exif pcntl bcmath intl sockets
 
 # Instalar Redis extension
 RUN pecl install redis && docker-php-ext-enable redis

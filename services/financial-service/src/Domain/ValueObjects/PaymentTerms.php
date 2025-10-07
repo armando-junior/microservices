@@ -77,7 +77,7 @@ final class PaymentTerms
         }
     }
 
-    public function days(): int
+    public function getDays(): int
     {
         return $this->days;
     }
