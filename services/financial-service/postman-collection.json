@@ -1,38 +1,430 @@
 {
 	"info": {
-		"_postman_id": "sales-service-collection",
-		"name": "Sales Service API",
-		"description": "Microserviço de Vendas - Gerenciamento de clientes e pedidos de venda",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"_postman_id": "financial-service-collection-2025",
+		"name": "Financial Service API",
+		"description": "Complete API collection for Financial Service - Microservices Architecture\n\nManages:\n- Suppliers (Fornecedores)\n- Financial Categories\n- Accounts Payable (Contas a Pagar)\n- Accounts Receivable (Contas a Receber)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "financial-service-v1"
 	},
-	"auth": {
-		"type": "bearer",
-		"bearer": [
-			{
-				"key": "token",
-				"value": "{{jwt_token}}",
-				"type": "string"
-			}
-		]
-	},
+	"item": [
+		{
+			"name": "Health Check",
+			"item": [
+				{
+					"name": "Check Service Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						},
+						"description": "Verifica o status do Financial Service e suas dependências (database)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Suppliers",
+			"item": [
+				{
+					"name": "List Suppliers",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/suppliers?page=1&per_page=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "suppliers"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Página atual"
+								},
+								{
+									"key": "per_page",
+									"value": "10",
+									"description": "Itens por página"
+								}
+							]
+						},
+						"description": "Lista todos os fornecedores com paginação"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Supplier",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/suppliers/{{supplier_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "suppliers", "{{supplier_id}}"]
+						},
+						"description": "Busca um fornecedor específico por ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Supplier",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Fornecedor ABC Ltda\",\n  \"document\": \"98765432000199\",\n  \"email\": \"contato@abc.com\",\n  \"phone\": \"+55 11 91234-5678\",\n  \"address\": \"Av. Principal, 456 - Rio de Janeiro, RJ\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/suppliers",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "suppliers"]
+						},
+						"description": "Cria um novo fornecedor"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Supplier",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Fornecedor ABC Ltda - Atualizado\",\n  \"email\": \"novo@abc.com\",\n  \"phone\": \"+55 11 99999-9999\",\n  \"address\": \"Nova Av. Principal, 789 - Rio de Janeiro, RJ\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/suppliers/{{supplier_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "suppliers", "{{supplier_id}}"]
+						},
+						"description": "Atualiza um fornecedor existente"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Categories",
+			"item": [
+				{
+					"name": "List Categories",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "categories"]
+						},
+						"description": "Lista todas as categorias financeiras"
+					},
+					"response": []
+				},
+				{
+					"name": "List Categories by Type",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories?type=expense",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "categories"],
+							"query": [
+								{
+									"key": "type",
+									"value": "expense",
+									"description": "income ou expense"
+								}
+							]
+						},
+						"description": "Lista categorias filtradas por tipo (income ou expense)"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Category",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Aluguel\",\n  \"type\": \"expense\",\n  \"description\": \"Pagamento de aluguel mensal\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "categories"]
+						},
+						"description": "Cria uma nova categoria financeira"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Category",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Aluguel e Condomínio\",\n  \"description\": \"Pagamento de aluguel e condomínio mensal\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories/{{category_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "categories", "{{category_id}}"]
+						},
+						"description": "Atualiza uma categoria existente"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Accounts Payable",
+			"item": [
+				{
+					"name": "List Accounts Payable",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/accounts-payable?page=1&per_page=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "accounts-payable"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "10"
+								},
+								{
+									"key": "status",
+									"value": "pending",
+									"disabled": true,
+									"description": "pending, paid, overdue, cancelled"
+								},
+								{
+									"key": "supplier_id",
+									"value": "",
+									"disabled": true,
+									"description": "UUID do fornecedor"
+								},
+								{
+									"key": "due_date_from",
+									"value": "2025-10-01",
+									"disabled": true,
+									"description": "Data inicial (Y-m-d)"
+								},
+								{
+									"key": "due_date_to",
+									"value": "2025-10-31",
+									"disabled": true,
+									"description": "Data final (Y-m-d)"
+								}
+							]
+						},
+						"description": "Lista contas a pagar com paginação e filtros"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Account Payable",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"supplier_id\": \"{{supplier_id}}\",\n  \"category_id\": \"{{category_id}}\",\n  \"description\": \"Pagamento de fornecedor - Pedido #5678\",\n  \"amount\": 25000.50,\n  \"issue_date\": \"2025-10-07\",\n  \"payment_terms_days\": 30\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/accounts-payable",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "accounts-payable"]
+						},
+						"description": "Cria uma nova conta a pagar"
+					},
+					"response": []
+				},
+				{
+					"name": "Pay Account Payable",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"notes\": \"Pagamento realizado via transferência bancária\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/accounts-payable/{{account_payable_id}}/pay",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "accounts-payable", "{{account_payable_id}}", "pay"]
+						},
+						"description": "Registra o pagamento de uma conta a pagar"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Accounts Receivable",
+			"item": [
+				{
+					"name": "List Accounts Receivable",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/accounts-receivable?page=1&per_page=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "accounts-receivable"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "10"
+								},
+								{
+									"key": "status",
+									"value": "pending",
+									"disabled": true,
+									"description": "pending, received, overdue, cancelled"
+								},
+								{
+									"key": "customer_id",
+									"value": "",
+									"disabled": true,
+									"description": "UUID do cliente"
+								},
+								{
+									"key": "due_date_from",
+									"value": "2025-10-01",
+									"disabled": true,
+									"description": "Data inicial (Y-m-d)"
+								},
+								{
+									"key": "due_date_to",
+									"value": "2025-10-31",
+									"disabled": true,
+									"description": "Data final (Y-m-d)"
+								}
+							]
+						},
+						"description": "Lista contas a receber com paginação e filtros"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Account Receivable",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customer_id\": \"{{customer_id}}\",\n  \"category_id\": \"{{category_id}}\",\n  \"description\": \"Venda de produtos - Nota Fiscal #1111\",\n  \"amount\": 18500.75,\n  \"issue_date\": \"2025-10-07\",\n  \"payment_terms_days\": 30\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/accounts-receivable",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "accounts-receivable"]
+						},
+						"description": "Cria uma nova conta a receber"
+					},
+					"response": []
+				},
+				{
+					"name": "Receive Account Receivable",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"notes\": \"Recebido via PIX\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/accounts-receivable/{{account_receivable_id}}/receive",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "accounts-receivable", "{{account_receivable_id}}", "receive"]
+						},
+						"description": "Registra o recebimento de uma conta a receber"
+					},
+					"response": []
+				}
+			]
+		}
+	],
 	"variable": [
 		{
 			"key": "base_url",
-			"value": "http://localhost:9003/api",
+			"value": "http://localhost:9004",
 			"type": "string"
 		},
 		{
-			"key": "auth_url",
-			"value": "http://localhost:9001/api",
+			"key": "supplier_id",
+			"value": "",
 			"type": "string"
 		},
 		{
-			"key": "inventory_url",
-			"value": "http://localhost:9002/api",
+			"key": "category_id",
+			"value": "",
 			"type": "string"
 		},
 		{
-			"key": "jwt_token",
+			"key": "account_payable_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "account_receivable_id",
 			"value": "",
 			"type": "string"
 		},
@@ -40,541 +432,6 @@
 			"key": "customer_id",
 			"value": "",
 			"type": "string"
-		},
-		{
-			"key": "order_id",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "product_id",
-			"value": "",
-			"type": "string"
-		}
-	],
-	"item": [
-		{
-			"name": "Health Check",
-			"request": {
-				"auth": {
-					"type": "noauth"
-				},
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{base_url}}/health",
-					"host": ["{{base_url}}"],
-					"path": ["health"]
-				},
-				"description": "Verifica o status do Sales Service"
-			},
-			"response": [],
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Status code is 200\", function () {",
-							"    pm.response.to.have.status(200);",
-							"});",
-							"",
-							"pm.test(\"Service is ok\", function () {",
-							"    var jsonData = pm.response.json();",
-							"    pm.expect(jsonData.status).to.eql('ok');",
-							"    pm.expect(jsonData.service).to.eql('sales-service');",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			]
-		},
-		{
-			"name": "Auth",
-			"item": [
-				{
-					"name": "Login (Get Token)",
-					"request": {
-						"auth": {
-							"type": "noauth"
-						},
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"email\": \"testauth@example.com\",\n    \"password\": \"Test@123\"\n}"
-						},
-						"url": {
-							"raw": "{{auth_url}}/auth/login",
-							"host": ["{{auth_url}}"],
-							"path": ["auth", "login"]
-						},
-						"description": "Faz login no Auth Service e obtém o JWT token"
-					},
-					"response": [],
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"if (pm.response.code === 200) {",
-									"    var jsonData = pm.response.json();",
-									"    pm.environment.set(\"jwt_token\", jsonData.data.access_token);",
-									"    pm.test(\"Token obtained\", function () {",
-									"        pm.expect(jsonData.data.access_token).to.be.a('string');",
-									"    });",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				}
-			]
-		},
-		{
-			"name": "Customers",
-			"item": [
-				{
-					"name": "List Customers",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/v1/customers?page=1&per_page=15",
-							"host": ["{{base_url}}"],
-							"path": ["v1", "customers"],
-							"query": [
-								{
-									"key": "page",
-									"value": "1"
-								},
-								{
-									"key": "per_page",
-									"value": "15"
-								},
-								{
-									"key": "status",
-									"value": "active",
-									"disabled": true
-								},
-								{
-									"key": "search",
-									"value": "silva",
-									"disabled": true
-								}
-							]
-						},
-						"description": "Lista todos os clientes com paginação"
-					},
-					"response": [],
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test(\"Response has data and meta\", function () {",
-									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData).to.have.property('data');",
-									"    pm.expect(jsonData).to.have.property('meta');",
-									"    pm.expect(jsonData.meta).to.have.property('total');",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Create Customer",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"name\": \"João Silva\",\n    \"email\": \"joao.silva@example.com\",\n    \"phone\": \"11987654321\",\n    \"document\": \"11144477735\",\n    \"address_street\": \"Rua das Flores\",\n    \"address_number\": \"123\",\n    \"address_complement\": \"Apto 45\",\n    \"address_city\": \"São Paulo\",\n    \"address_state\": \"SP\",\n    \"address_zip_code\": \"01234567\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/v1/customers",
-							"host": ["{{base_url}}"],
-							"path": ["v1", "customers"]
-						},
-						"description": "Cria um novo cliente"
-					},
-					"response": [],
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"if (pm.response.code === 201) {",
-									"    var jsonData = pm.response.json();",
-									"    pm.environment.set(\"customer_id\", jsonData.data.id);",
-									"    pm.test(\"Customer created\", function () {",
-									"        pm.expect(jsonData.message).to.include('successfully');",
-									"        pm.expect(jsonData.data.id).to.be.a('string');",
-									"        pm.expect(jsonData.data.status).to.eql('active');",
-									"    });",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Get Customer",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/v1/customers/{{customer_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["v1", "customers", "{{customer_id}}"]
-						},
-						"description": "Busca um cliente por ID"
-					},
-					"response": [],
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test(\"Customer data is complete\", function () {",
-									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData.data).to.have.property('id');",
-									"    pm.expect(jsonData.data).to.have.property('name');",
-									"    pm.expect(jsonData.data).to.have.property('email');",
-									"    pm.expect(jsonData.data).to.have.property('document_formatted');",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				}
-			]
-		},
-		{
-			"name": "Orders",
-			"item": [
-				{
-					"name": "List Orders",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/v1/orders?page=1&per_page=15",
-							"host": ["{{base_url}}"],
-							"path": ["v1", "orders"],
-							"query": [
-								{
-									"key": "page",
-									"value": "1"
-								},
-								{
-									"key": "per_page",
-									"value": "15"
-								},
-								{
-									"key": "status",
-									"value": "confirmed",
-									"disabled": true
-								},
-								{
-									"key": "payment_status",
-									"value": "pending",
-									"disabled": true
-								},
-								{
-									"key": "customer_id",
-									"value": "{{customer_id}}",
-									"disabled": true
-								}
-							]
-						},
-						"description": "Lista todos os pedidos com filtros"
-					},
-					"response": [],
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test(\"Response has data and meta\", function () {",
-									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData).to.have.property('data');",
-									"    pm.expect(jsonData).to.have.property('meta');",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Create Order",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"customer_id\": \"{{customer_id}}\",\n    \"notes\": \"Pedido de teste via Postman\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/v1/orders",
-							"host": ["{{base_url}}"],
-							"path": ["v1", "orders"]
-						},
-						"description": "Cria um novo pedido em status draft"
-					},
-					"response": [],
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"if (pm.response.code === 201) {",
-									"    var jsonData = pm.response.json();",
-									"    pm.environment.set(\"order_id\", jsonData.data.id);",
-									"    pm.test(\"Order created\", function () {",
-									"        pm.expect(jsonData.message).to.include('successfully');",
-									"        pm.expect(jsonData.data.id).to.be.a('string');",
-									"        pm.expect(jsonData.data.status).to.eql('draft');",
-									"        pm.expect(jsonData.data.order_number).to.match(/ORD-\\d{4}-\\d{4}/);",
-									"    });",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Get Order",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/v1/orders/{{order_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["v1", "orders", "{{order_id}}"]
-						},
-						"description": "Busca um pedido por ID, incluindo todos os itens"
-					},
-					"response": [],
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test(\"Order data is complete\", function () {",
-									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData.data).to.have.property('id');",
-									"    pm.expect(jsonData.data).to.have.property('order_number');",
-									"    pm.expect(jsonData.data).to.have.property('status');",
-									"    pm.expect(jsonData.data).to.have.property('items');",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Get Product from Inventory (Helper)",
-					"request": {
-						"auth": {
-							"type": "noauth"
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{inventory_url}}/v1/products",
-							"host": ["{{inventory_url}}"],
-							"path": ["v1", "products"]
-						},
-						"description": "Busca produtos do Inventory Service (necessário para adicionar item ao pedido)"
-					},
-					"response": [],
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"if (pm.response.code === 200) {",
-									"    var jsonData = pm.response.json();",
-									"    if (jsonData.data && jsonData.data.length > 0) {",
-									"        pm.environment.set(\"product_id\", jsonData.data[0].id);",
-									"        pm.test(\"Product ID saved\", function () {",
-									"            pm.expect(jsonData.data[0].id).to.be.a('string');",
-									"        });",
-									"    }",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Add Order Item",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"product_id\": \"{{product_id}}\",\n    \"quantity\": 2,\n    \"discount\": 10.00\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/v1/orders/{{order_id}}/items",
-							"host": ["{{base_url}}"],
-							"path": ["v1", "orders", "{{order_id}}", "items"]
-						},
-						"description": "Adiciona um item ao pedido (busca produto do Inventory Service)"
-					},
-					"response": [],
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"if (pm.response.code === 200) {",
-									"    var jsonData = pm.response.json();",
-									"    pm.test(\"Item added successfully\", function () {",
-									"        pm.expect(jsonData.message).to.include('successfully');",
-									"        pm.expect(jsonData.data.items_count).to.be.above(0);",
-									"        pm.expect(jsonData.data.total).to.be.above(0);",
-									"    });",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Confirm Order",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/v1/orders/{{order_id}}/confirm",
-							"host": ["{{base_url}}"],
-							"path": ["v1", "orders", "{{order_id}}", "confirm"]
-						},
-						"description": "Confirma o pedido, mudando status de draft para confirmed"
-					},
-					"response": [],
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"if (pm.response.code === 200) {",
-									"    var jsonData = pm.response.json();",
-									"    pm.test(\"Order confirmed\", function () {",
-									"        pm.expect(jsonData.message).to.include('successfully');",
-									"        pm.expect(jsonData.data.status).to.eql('confirmed');",
-									"        pm.expect(jsonData.data.confirmed_at).to.not.be.null;",
-									"    });",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				},
-				{
-					"name": "Cancel Order",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"reason\": \"Cliente desistiu da compra\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/v1/orders/{{order_id}}/cancel",
-							"host": ["{{base_url}}"],
-							"path": ["v1", "orders", "{{order_id}}", "cancel"]
-						},
-						"description": "Cancela um pedido"
-					},
-					"response": [],
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"if (pm.response.code === 200) {",
-									"    var jsonData = pm.response.json();",
-									"    pm.test(\"Order cancelled\", function () {",
-									"        pm.expect(jsonData.message).to.include('successfully');",
-									"        pm.expect(jsonData.data.status).to.eql('cancelled');",
-									"        pm.expect(jsonData.data.cancelled_at).to.not.be.null;",
-									"    });",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					]
-				}
-			]
 		}
 	]
 }

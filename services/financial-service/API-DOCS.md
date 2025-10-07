@@ -1,901 +1,940 @@
-# Sales Service - API Documentation
+# 🏦 Financial Service - API Documentation
 
-## Visão Geral
-
-O **Sales Service** é responsável pela gestão de vendas no sistema ERP, incluindo:
-- Gerenciamento de clientes (cadastro, consulta, listagem)
-- Gerenciamento de pedidos de venda
-- Adição de itens aos pedidos (integração com Inventory Service)
-- Controle de status de pedidos e pagamentos
-- Validação de documentos brasileiros (CPF/CNPJ)
+**Version:** 1.0.0  
+**Base URL:** `http://localhost:9004`  
+**API Prefix:** `/api/v1`
 
 ---
 
-## Informações Técnicas
+## 📋 Table of Contents
 
-- **Base URL**: `http://localhost:9003/api`
-- **Porta**: `9003`
-- **Autenticação**: JWT Bearer Token (obtido no Auth Service)
-- **Formato**: JSON
-- **Versão da API**: `v1`
+- [Overview](#overview)
+- [Authentication](#authentication)
+- [Health Check](#health-check)
+- [Suppliers](#suppliers)
+- [Categories](#categories)
+- [Accounts Payable](#accounts-payable)
+- [Accounts Receivable](#accounts-receivable)
+- [Error Handling](#error-handling)
 
 ---
 
-## Autenticação
+## 🎯 Overview
 
-Todos os endpoints da API (exceto health check) requerem autenticação JWT.
+O **Financial Service** é responsável por gerenciar:
+- **Fornecedores** (Suppliers)
+- **Categorias Financeiras** (Categories)
+- **Contas a Pagar** (Accounts Payable)
+- **Contas a Receber** (Accounts Receivable)
 
-### Como obter o token
+### Base URLs
 
-1. Faça login no **Auth Service** (porta 9001):
+- **Local:** `http://localhost:9004`
+- **Docker Internal:** `http://financial-service:8000`
+
+---
+
+## 🔐 Authentication
+
+Atualmente o serviço **não requer autenticação JWT** para desenvolvimento local.
+
+> **Nota:** Para produção, recomenda-se integração com o Auth Service para proteção dos endpoints.
+
+---
+
+## ❤️ Health Check
+
+### Check Service Health
+
+**Endpoint:** `GET /health`
+
+Verifica o status do serviço e suas dependências.
+
+#### Request
 
 ```bash
-curl -X POST http://localhost:9001/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "seu@email.com",
-    "password": "sua_senha"
-  }'
+curl -X GET http://localhost:9004/health
 ```
 
-2. Use o token retornado no header `Authorization`:
+#### Response (200 OK)
 
-```bash
-Authorization: Bearer {seu_token_jwt}
-```
-
-### Códigos de Erro de Autenticação
-
-| Código | Mensagem | Descrição |
-|--------|----------|-----------|
-| `401` | `Unauthorized` | Token ausente ou inválido |
-| `401` | `TokenExpired` | Token expirado |
-| `401` | `InvalidToken` | Assinatura do token inválida |
-
----
-
-## Endpoints
-
-### Health Check
-
-#### `GET /health`
-
-Verifica o status do serviço.
-
-**Autenticação**: Não requerida
-
-**Resposta de Sucesso (200)**:
 ```json
 {
-  "status": "ok",
-  "service": "sales-service",
-  "timestamp": "2025-10-06T02:00:00+00:00"
+  "service": "financial-service",
+  "status": "healthy",
+  "checks": {
+    "service": "up",
+    "database": "connected"
+  },
+  "timestamp": "2025-10-07T21:00:00+00:00"
+}
+```
+
+#### Response (503 Service Unavailable)
+
+```json
+{
+  "service": "financial-service",
+  "status": "unhealthy",
+  "checks": {
+    "service": "up",
+    "database": "disconnected"
+  },
+  "timestamp": "2025-10-07T21:00:00+00:00"
 }
 ```
 
 ---
 
-## Customers (Clientes)
+## 👥 Suppliers
 
-### 1. Listar Clientes
+### List Suppliers
 
-#### `GET /v1/customers`
+**Endpoint:** `GET /api/v1/suppliers`
 
-Lista todos os clientes com paginação e filtros.
+Lista todos os fornecedores com paginação.
 
-**Autenticação**: Requerida (JWT)
+#### Query Parameters
 
-**Query Parameters**:
-| Parâmetro | Tipo | Obrigatório | Descrição |
-|-----------|------|-------------|-----------|
-| `page` | integer | Não | Número da página (padrão: 1) |
-| `per_page` | integer | Não | Itens por página (padrão: 15) |
-| `status` | string | Não | Filtrar por status: `active`, `inactive` |
-| `search` | string | Não | Buscar por nome, email ou documento |
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `page` | integer | No | 1 | Número da página |
+| `per_page` | integer | No | 15 | Itens por página |
 
-**Exemplo de Requisição**:
+#### Request
+
 ```bash
-curl -X GET "http://localhost:9003/api/v1/customers?page=1&per_page=15&status=active" \
-  -H "Authorization: Bearer {token}"
+curl -X GET "http://localhost:9004/api/v1/suppliers?page=1&per_page=10"
 ```
 
-**Resposta de Sucesso (200)**:
+#### Response (200 OK)
+
 ```json
 {
   "data": [
     {
-      "id": "3a25ea9d-3d54-4635-a65f-588ba03bca28",
-      "name": "João Silva",
-      "email": "joao.silva@example.com",
-      "phone": "11987654321",
-      "phone_formatted": "(11) 98765-4321",
-      "document": "11144477735",
-      "document_formatted": "111.444.777-35",
-      "document_type": "CPF",
-      "address": {
-        "street": "Rua das Flores",
-        "number": "123",
-        "complement": null,
-        "city": "São Paulo",
-        "state": "SP",
-        "zip_code": "01234567"
-      },
-      "status": "active",
-      "created_at": "2025-10-06 02:00:00",
-      "updated_at": null
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "Fornecedor XYZ Ltda",
+      "document": "12345678000190",
+      "email": "contato@fornecedor.com",
+      "phone": "+55 11 98765-4321",
+      "address": "Rua Exemplo, 123 - São Paulo, SP",
+      "active": true,
+      "created_at": "2025-10-07T10:00:00+00:00",
+      "updated_at": "2025-10-07T10:00:00+00:00"
     }
   ],
   "meta": {
-    "current_page": 1,
-    "per_page": 15,
+    "total": 50,
+    "page": 1,
+    "per_page": 10
+  }
+}
+```
+
+---
+
+### Get Supplier
+
+**Endpoint:** `GET /api/v1/suppliers/{id}`
+
+Busca um fornecedor específico por ID.
+
+#### Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | uuid | Yes | ID do fornecedor |
+
+#### Request
+
+```bash
+curl -X GET http://localhost:9004/api/v1/suppliers/550e8400-e29b-41d4-a716-446655440000
+```
+
+#### Response (200 OK)
+
+```json
+{
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Fornecedor XYZ Ltda",
+    "document": "12345678000190",
+    "email": "contato@fornecedor.com",
+    "phone": "+55 11 98765-4321",
+    "address": "Rua Exemplo, 123 - São Paulo, SP",
+    "active": true,
+    "created_at": "2025-10-07T10:00:00+00:00",
+    "updated_at": "2025-10-07T10:00:00+00:00"
+  }
+}
+```
+
+#### Response (404 Not Found)
+
+```json
+{
+  "error": "SupplierNotFoundException",
+  "message": "Supplier not found"
+}
+```
+
+---
+
+### Create Supplier
+
+**Endpoint:** `POST /api/v1/suppliers`
+
+Cria um novo fornecedor.
+
+#### Request Body
+
+```json
+{
+  "name": "Fornecedor ABC Ltda",
+  "document": "98765432000199",
+  "email": "contato@abc.com",
+  "phone": "+55 11 91234-5678",
+  "address": "Av. Principal, 456 - Rio de Janeiro, RJ"
+}
+```
+
+#### Field Validations
+
+| Field | Type | Required | Rules |
+|-------|------|----------|-------|
+| `name` | string | Yes | min:3, max:150 |
+| `document` | string | No | size:14, unique |
+| `email` | string | No | valid email, max:100 |
+| `phone` | string | No | max:20 |
+| `address` | string | No | max:500 |
+
+#### Request
+
+```bash
+curl -X POST http://localhost:9004/api/v1/suppliers \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Fornecedor ABC Ltda",
+    "document": "98765432000199",
+    "email": "contato@abc.com",
+    "phone": "+55 11 91234-5678",
+    "address": "Av. Principal, 456 - Rio de Janeiro, RJ"
+  }'
+```
+
+#### Response (201 Created)
+
+```json
+{
+  "data": {
+    "id": "660e9511-f39c-52e5-b827-557766551111",
+    "name": "Fornecedor ABC Ltda",
+    "document": "98765432000199",
+    "email": "contato@abc.com",
+    "phone": "+55 11 91234-5678",
+    "address": "Av. Principal, 456 - Rio de Janeiro, RJ",
+    "active": true,
+    "created_at": "2025-10-07T15:30:00+00:00",
+    "updated_at": "2025-10-07T15:30:00+00:00"
+  },
+  "message": "Supplier created successfully"
+}
+```
+
+#### Response (422 Unprocessable Entity)
+
+```json
+{
+  "error": "Validation failed",
+  "message": "The given data was invalid.",
+  "errors": {
+    "name": ["Supplier name is required"],
+    "document": ["A supplier with this document already exists"]
+  }
+}
+```
+
+---
+
+### Update Supplier
+
+**Endpoint:** `PUT /api/v1/suppliers/{id}`
+
+Atualiza um fornecedor existente.
+
+#### Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | uuid | Yes | ID do fornecedor |
+
+#### Request Body
+
+```json
+{
+  "name": "Fornecedor ABC Ltda - Atualizado",
+  "email": "novo@abc.com",
+  "phone": "+55 11 99999-9999",
+  "address": "Nova Av. Principal, 789 - Rio de Janeiro, RJ"
+}
+```
+
+#### Request
+
+```bash
+curl -X PUT http://localhost:9004/api/v1/suppliers/660e9511-f39c-52e5-b827-557766551111 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Fornecedor ABC Ltda - Atualizado",
+    "email": "novo@abc.com"
+  }'
+```
+
+#### Response (200 OK)
+
+```json
+{
+  "data": {
+    "id": "660e9511-f39c-52e5-b827-557766551111",
+    "name": "Fornecedor ABC Ltda - Atualizado",
+    "document": "98765432000199",
+    "email": "novo@abc.com",
+    "phone": "+55 11 91234-5678",
+    "address": "Av. Principal, 456 - Rio de Janeiro, RJ",
+    "active": true,
+    "created_at": "2025-10-07T15:30:00+00:00",
+    "updated_at": "2025-10-07T16:45:00+00:00"
+  },
+  "message": "Supplier updated successfully"
+}
+```
+
+---
+
+## 📂 Categories
+
+### List Categories
+
+**Endpoint:** `GET /api/v1/categories`
+
+Lista todas as categorias financeiras.
+
+#### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `type` | string | No | Filtrar por tipo: `income` ou `expense` |
+
+#### Request
+
+```bash
+curl -X GET "http://localhost:9004/api/v1/categories?type=expense"
+```
+
+#### Response (200 OK)
+
+```json
+{
+  "data": [
+    {
+      "id": "770e9622-g49d-63f6-c938-668877662222",
+      "name": "Fornecedores",
+      "description": "Pagamentos a fornecedores",
+      "type": "expense",
+      "created_at": "2025-10-07T10:00:00+00:00",
+      "updated_at": "2025-10-07T10:00:00+00:00"
+    },
+    {
+      "id": "880e9733-h59e-74g7-d049-779988773333",
+      "name": "Salários",
+      "description": "Folha de pagamento",
+      "type": "expense",
+      "created_at": "2025-10-07T10:00:00+00:00",
+      "updated_at": "2025-10-07T10:00:00+00:00"
+    }
+  ]
+}
+```
+
+---
+
+### Create Category
+
+**Endpoint:** `POST /api/v1/categories`
+
+Cria uma nova categoria financeira.
+
+#### Request Body
+
+```json
+{
+  "name": "Aluguel",
+  "type": "expense",
+  "description": "Pagamento de aluguel mensal"
+}
+```
+
+#### Field Validations
+
+| Field | Type | Required | Rules |
+|-------|------|----------|-------|
+| `name` | string | Yes | min:3, max:100 |
+| `type` | string | Yes | in:income,expense |
+| `description` | string | No | max:500 |
+
+#### Request
+
+```bash
+curl -X POST http://localhost:9004/api/v1/categories \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Aluguel",
+    "type": "expense",
+    "description": "Pagamento de aluguel mensal"
+  }'
+```
+
+#### Response (201 Created)
+
+```json
+{
+  "data": {
+    "id": "990e9844-i69f-85h8-e150-880099884444",
+    "name": "Aluguel",
+    "description": "Pagamento de aluguel mensal",
+    "type": "expense",
+    "created_at": "2025-10-07T16:00:00+00:00",
+    "updated_at": "2025-10-07T16:00:00+00:00"
+  },
+  "message": "Category created successfully"
+}
+```
+
+---
+
+### Update Category
+
+**Endpoint:** `PUT /api/v1/categories/{id}`
+
+Atualiza uma categoria existente.
+
+#### Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | uuid | Yes | ID da categoria |
+
+#### Request Body
+
+```json
+{
+  "name": "Aluguel e Condomínio",
+  "description": "Pagamento de aluguel e condomínio mensal"
+}
+```
+
+#### Request
+
+```bash
+curl -X PUT http://localhost:9004/api/v1/categories/990e9844-i69f-85h8-e150-880099884444 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Aluguel e Condomínio",
+    "description": "Pagamento de aluguel e condomínio mensal"
+  }'
+```
+
+#### Response (200 OK)
+
+```json
+{
+  "data": {
+    "id": "990e9844-i69f-85h8-e150-880099884444",
+    "name": "Aluguel e Condomínio",
+    "description": "Pagamento de aluguel e condomínio mensal",
+    "type": "expense",
+    "created_at": "2025-10-07T16:00:00+00:00",
+    "updated_at": "2025-10-07T17:00:00+00:00"
+  },
+  "message": "Category updated successfully"
+}
+```
+
+---
+
+## 💳 Accounts Payable
+
+### List Accounts Payable
+
+**Endpoint:** `GET /api/v1/accounts-payable`
+
+Lista contas a pagar com paginação e filtros.
+
+#### Query Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `page` | integer | No | 1 | Número da página |
+| `per_page` | integer | No | 15 | Itens por página |
+| `status` | string | No | - | Filtrar por status: `pending`, `paid`, `overdue`, `cancelled` |
+| `supplier_id` | uuid | No | - | Filtrar por fornecedor |
+| `due_date_from` | date | No | - | Data de vencimento inicial (Y-m-d) |
+| `due_date_to` | date | No | - | Data de vencimento final (Y-m-d) |
+
+#### Request
+
+```bash
+curl -X GET "http://localhost:9004/api/v1/accounts-payable?status=pending&page=1&per_page=10"
+```
+
+#### Response (200 OK)
+
+```json
+{
+  "data": [
+    {
+      "id": "aa0e9955-j79g-96i9-f261-991100995555",
+      "supplier_id": "550e8400-e29b-41d4-a716-446655440000",
+      "category_id": "770e9622-g49d-63f6-c938-668877662222",
+      "description": "Pagamento de fornecedor - Pedido #1234",
+      "amount": "15000.00",
+      "issue_date": "2025-10-01",
+      "due_date": "2025-10-30",
+      "status": "pending",
+      "paid_at": null,
+      "payment_notes": null,
+      "created_at": "2025-10-01T10:00:00+00:00",
+      "updated_at": "2025-10-01T10:00:00+00:00"
+    }
+  ],
+  "meta": {
     "total": 25,
-    "last_page": 2
+    "page": 1,
+    "per_page": 10
   }
 }
 ```
 
 ---
 
-### 2. Criar Cliente
+### Create Account Payable
 
-#### `POST /v1/customers`
+**Endpoint:** `POST /api/v1/accounts-payable`
 
-Cria um novo cliente no sistema.
+Cria uma nova conta a pagar.
 
-**Autenticação**: Requerida (JWT)
+#### Request Body
 
-**Body Parameters**:
 ```json
 {
-  "name": "João Silva",
-  "email": "joao.silva@example.com",
-  "phone": "11987654321",
-  "document": "11144477735",
-  "address_street": "Rua das Flores",
-  "address_number": "123",
-  "address_complement": "Apto 45",
-  "address_city": "São Paulo",
-  "address_state": "SP",
-  "address_zip_code": "01234567"
+  "supplier_id": "550e8400-e29b-41d4-a716-446655440000",
+  "category_id": "770e9622-g49d-63f6-c938-668877662222",
+  "description": "Pagamento de fornecedor - Pedido #5678",
+  "amount": 25000.50,
+  "issue_date": "2025-10-07",
+  "payment_terms_days": 30
 }
 ```
 
-**Validações**:
-- `name`: obrigatório, 2-200 caracteres, apenas letras
-- `email`: obrigatório, formato válido, único
-- `phone`: obrigatório, formato numérico
-- `document`: obrigatório, CPF ou CNPJ válido com dígitos verificadores
-- `address_state`: opcional, 2 caracteres maiúsculos (sigla do estado)
+#### Field Validations
 
-**Exemplo de Requisição**:
+| Field | Type | Required | Rules |
+|-------|------|----------|-------|
+| `supplier_id` | uuid | Yes | exists:suppliers |
+| `category_id` | uuid | Yes | exists:categories |
+| `description` | string | Yes | max:255 |
+| `amount` | numeric | Yes | min:0.01 |
+| `issue_date` | date | Yes | format:Y-m-d |
+| `payment_terms_days` | integer | Yes | min:0, max:365 |
+
+#### Request
+
 ```bash
-curl -X POST http://localhost:9003/api/v1/customers \
+curl -X POST http://localhost:9004/api/v1/accounts-payable \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer {token}" \
   -d '{
-    "name": "Maria Santos",
-    "email": "maria.santos@example.com",
-    "phone": "11912345678",
-    "document": "52998224725",
-    "address_street": "Av Paulista",
-    "address_number": "1000",
-    "address_city": "São Paulo",
-    "address_state": "SP",
-    "address_zip_code": "01310100"
+    "supplier_id": "550e8400-e29b-41d4-a716-446655440000",
+    "category_id": "770e9622-g49d-63f6-c938-668877662222",
+    "description": "Pagamento de fornecedor - Pedido #5678",
+    "amount": 25000.50,
+    "issue_date": "2025-10-07",
+    "payment_terms_days": 30
   }'
 ```
 
-**Resposta de Sucesso (201)**:
+#### Response (201 Created)
+
 ```json
 {
-  "message": "Customer created successfully",
   "data": {
-    "id": "70fca607-4b7b-45d8-b8e8-99eeaca2ae82",
-    "name": "Maria Santos",
-    "email": "maria.santos@example.com",
-    "phone": "11912345678",
-    "phone_formatted": "(11) 91234-5678",
-    "document": "52998224725",
-    "document_formatted": "529.982.247-25",
-    "document_type": "CPF",
-    "address": {
-      "street": "Av Paulista",
-      "number": "1000",
-      "complement": null,
-      "city": "São Paulo",
-      "state": "SP",
-      "zip_code": "01310100"
-    },
-    "status": "active",
-    "created_at": "2025-10-06 02:25:00",
-    "updated_at": null
-  }
-}
-```
-
-**Respostas de Erro**:
-
-**409 - Email já existe**:
-```json
-{
-  "error": "EmailAlreadyExists",
-  "message": "Email already exists: maria.santos@example.com"
-}
-```
-
-**409 - Documento já existe**:
-```json
-{
-  "error": "DocumentAlreadyExists",
-  "message": "Document already exists: 529.982.247-25"
-}
-```
-
-**422 - CPF inválido**:
-```json
-{
-  "error": "InvalidDocumentException",
-  "message": "Invalid CPF"
+    "id": "bb0e9066-k89h-07j0-g372-002211006666",
+    "supplier_id": "550e8400-e29b-41d4-a716-446655440000",
+    "category_id": "770e9622-g49d-63f6-c938-668877662222",
+    "description": "Pagamento de fornecedor - Pedido #5678",
+    "amount": "25000.50",
+    "issue_date": "2025-10-07",
+    "due_date": "2025-11-06",
+    "status": "pending",
+    "paid_at": null,
+    "payment_notes": null,
+    "created_at": "2025-10-07T18:00:00+00:00",
+    "updated_at": "2025-10-07T18:00:00+00:00"
+  },
+  "message": "Account payable created successfully"
 }
 ```
 
 ---
 
-### 3. Buscar Cliente
+### Pay Account Payable
 
-#### `GET /v1/customers/{id}`
+**Endpoint:** `POST /api/v1/accounts-payable/{id}/pay`
 
-Retorna os detalhes de um cliente específico.
+Registra o pagamento de uma conta a pagar.
 
-**Autenticação**: Requerida (JWT)
+#### Path Parameters
 
-**Path Parameters**:
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| `id` | UUID | ID do cliente |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | uuid | Yes | ID da conta a pagar |
 
-**Exemplo de Requisição**:
-```bash
-curl -X GET http://localhost:9003/api/v1/customers/70fca607-4b7b-45d8-b8e8-99eeaca2ae82 \
-  -H "Authorization: Bearer {token}"
-```
+#### Request Body
 
-**Resposta de Sucesso (200)**:
 ```json
 {
-  "data": {
-    "id": "70fca607-4b7b-45d8-b8e8-99eeaca2ae82",
-    "name": "Maria Santos",
-    "email": "maria.santos@example.com",
-    "phone": "11912345678",
-    "phone_formatted": "(11) 91234-5678",
-    "document": "52998224725",
-    "document_formatted": "529.982.247-25",
-    "document_type": "CPF",
-    "address": {
-      "street": "Av Paulista",
-      "number": "1000",
-      "complement": null,
-      "city": "São Paulo",
-      "state": "SP",
-      "zip_code": "01310100"
-    },
-    "status": "active",
-    "created_at": "2025-10-06 02:25:00",
-    "updated_at": null
-  }
+  "notes": "Pagamento realizado via transferência bancária"
 }
 ```
 
-**Respostas de Erro**:
+#### Request
 
-**404 - Cliente não encontrado**:
+```bash
+curl -X POST http://localhost:9004/api/v1/accounts-payable/bb0e9066-k89h-07j0-g372-002211006666/pay \
+  -H "Content-Type: application/json" \
+  -d '{
+    "notes": "Pagamento realizado via transferência bancária"
+  }'
+```
+
+#### Response (200 OK)
+
 ```json
 {
-  "error": "CustomerNotFound",
-  "message": "Customer not found with ID: 70fca607-4b7b-45d8-b8e8-99eeaca2ae82"
+  "data": {
+    "id": "bb0e9066-k89h-07j0-g372-002211006666",
+    "supplier_id": "550e8400-e29b-41d4-a716-446655440000",
+    "category_id": "770e9622-g49d-63f6-c938-668877662222",
+    "description": "Pagamento de fornecedor - Pedido #5678",
+    "amount": "25000.50",
+    "issue_date": "2025-10-07",
+    "due_date": "2025-11-06",
+    "status": "paid",
+    "paid_at": "2025-10-15T10:30:00+00:00",
+    "payment_notes": "Pagamento realizado via transferência bancária",
+    "created_at": "2025-10-07T18:00:00+00:00",
+    "updated_at": "2025-10-15T10:30:00+00:00"
+  },
+  "message": "Account payable paid successfully"
 }
 ```
 
 ---
 
-## Orders (Pedidos)
+## 💰 Accounts Receivable
 
-### 4. Listar Pedidos
+### List Accounts Receivable
 
-#### `GET /v1/orders`
+**Endpoint:** `GET /api/v1/accounts-receivable`
 
-Lista todos os pedidos com paginação e filtros.
+Lista contas a receber com paginação e filtros.
 
-**Autenticação**: Requerida (JWT)
+#### Query Parameters
 
-**Query Parameters**:
-| Parâmetro | Tipo | Obrigatório | Descrição |
-|-----------|------|-------------|-----------|
-| `page` | integer | Não | Número da página (padrão: 1) |
-| `per_page` | integer | Não | Itens por página (padrão: 15) |
-| `status` | string | Não | Filtrar por status do pedido |
-| `payment_status` | string | Não | Filtrar por status de pagamento |
-| `customer_id` | UUID | Não | Filtrar por cliente |
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `page` | integer | No | 1 | Número da página |
+| `per_page` | integer | No | 15 | Itens por página |
+| `status` | string | No | - | Filtrar por status: `pending`, `received`, `overdue`, `cancelled` |
+| `customer_id` | uuid | No | - | Filtrar por cliente |
+| `due_date_from` | date | No | - | Data de vencimento inicial (Y-m-d) |
+| `due_date_to` | date | No | - | Data de vencimento final (Y-m-d) |
 
-**Status de Pedido**:
-- `draft`: Rascunho (em criação)
-- `pending`: Pendente (aguardando processamento)
-- `confirmed`: Confirmado
-- `processing`: Em processamento
-- `shipped`: Enviado
-- `delivered`: Entregue
-- `cancelled`: Cancelado
+#### Request
 
-**Status de Pagamento**:
-- `pending`: Pendente
-- `paid`: Pago
-- `refunded`: Reembolsado
-- `failed`: Falhou
-
-**Exemplo de Requisição**:
 ```bash
-curl -X GET "http://localhost:9003/api/v1/orders?status=confirmed&page=1" \
-  -H "Authorization: Bearer {token}"
+curl -X GET "http://localhost:9004/api/v1/accounts-receivable?status=pending"
 ```
 
-**Resposta de Sucesso (200)**:
+#### Response (200 OK)
+
 ```json
 {
   "data": [
     {
-      "id": "526d715b-13a4-4328-8935-b78d63cfc9ef",
-      "order_number": "ORD-2025-0002",
-      "customer_id": "70fca607-4b7b-45d8-b8e8-99eeaca2ae82",
-      "status": "confirmed",
-      "subtotal": 3999.98,
-      "discount": 5.00,
-      "total": 3994.98,
-      "payment_status": "pending",
-      "payment_method": null,
-      "notes": "Pedido via API",
-      "items_count": 1,
-      "items": [
-        {
-          "id": "abc123...",
-          "product_id": "0eb5e387-d850-442e-8c8f-80f4fcec287f",
-          "product_name": "Notebook Dell Inspiron",
-          "sku": "NOTE-DELL-001",
-          "quantity": 2,
-          "unit_price": 1999.99,
-          "subtotal": 3999.98,
-          "discount": 5.00,
-          "total": 3994.98,
-          "created_at": "2025-10-06 02:30:00",
-          "updated_at": null
-        }
-      ],
-      "confirmed_at": "2025-10-06 02:34:21",
-      "cancelled_at": null,
-      "delivered_at": null,
-      "created_at": "2025-10-06 02:25:03",
-      "updated_at": "2025-10-06 02:34:21"
+      "id": "cc0e9177-l99i-18k1-h483-113322117777",
+      "customer_id": "dd0e9288-m00j-29l2-i594-224433228888",
+      "category_id": "ee0e9399-n11k-30m3-j605-335544339999",
+      "description": "Venda de produtos - Nota Fiscal #9876",
+      "amount": "35000.00",
+      "issue_date": "2025-10-05",
+      "due_date": "2025-11-05",
+      "status": "pending",
+      "received_at": null,
+      "receiving_notes": null,
+      "created_at": "2025-10-05T14:00:00+00:00",
+      "updated_at": "2025-10-05T14:00:00+00:00"
     }
   ],
   "meta": {
-    "current_page": 1,
-    "per_page": 15,
-    "total": 10,
-    "last_page": 1
+    "total": 15,
+    "page": 1,
+    "per_page": 15
   }
 }
 ```
 
 ---
 
-### 5. Criar Pedido
+### Create Account Receivable
 
-#### `POST /v1/orders`
+**Endpoint:** `POST /api/v1/accounts-receivable`
 
-Cria um novo pedido em status `draft` (rascunho).
+Cria uma nova conta a receber.
 
-**Autenticação**: Requerida (JWT)
+#### Request Body
 
-**Body Parameters**:
 ```json
 {
-  "customer_id": "70fca607-4b7b-45d8-b8e8-99eeaca2ae82",
-  "notes": "Pedido urgente"
+  "customer_id": "dd0e9288-m00j-29l2-i594-224433228888",
+  "category_id": "ee0e9399-n11k-30m3-j605-335544339999",
+  "description": "Venda de produtos - Nota Fiscal #1111",
+  "amount": 18500.75,
+  "issue_date": "2025-10-07",
+  "payment_terms_days": 30
 }
 ```
 
-**Validações**:
-- `customer_id`: obrigatório, UUID válido, cliente deve existir
-- `notes`: opcional, texto livre (máx. 1000 caracteres)
+#### Field Validations
 
-**Exemplo de Requisição**:
+| Field | Type | Required | Rules |
+|-------|------|----------|-------|
+| `customer_id` | uuid | Yes | valid uuid |
+| `category_id` | uuid | Yes | exists:categories |
+| `description` | string | Yes | max:255 |
+| `amount` | numeric | Yes | min:0.01 |
+| `issue_date` | date | Yes | format:Y-m-d |
+| `payment_terms_days` | integer | Yes | min:0, max:365 |
+
+#### Request
+
 ```bash
-curl -X POST http://localhost:9003/api/v1/orders \
+curl -X POST http://localhost:9004/api/v1/accounts-receivable \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer {token}" \
   -d '{
-    "customer_id": "70fca607-4b7b-45d8-b8e8-99eeaca2ae82",
-    "notes": "Pedido via API"
+    "customer_id": "dd0e9288-m00j-29l2-i594-224433228888",
+    "category_id": "ee0e9399-n11k-30m3-j605-335544339999",
+    "description": "Venda de produtos - Nota Fiscal #1111",
+    "amount": 18500.75,
+    "issue_date": "2025-10-07",
+    "payment_terms_days": 30
   }'
 ```
 
-**Resposta de Sucesso (201)**:
+#### Response (201 Created)
+
 ```json
 {
-  "message": "Order created successfully",
   "data": {
-    "id": "526d715b-13a4-4328-8935-b78d63cfc9ef",
-    "order_number": "ORD-2025-0002",
-    "customer_id": "70fca607-4b7b-45d8-b8e8-99eeaca2ae82",
-    "status": "draft",
-    "subtotal": 0,
-    "discount": 0,
-    "total": 0,
-    "payment_status": "pending",
-    "payment_method": null,
-    "notes": "Pedido via API",
-    "items_count": 0,
-    "items": [],
-    "confirmed_at": null,
-    "cancelled_at": null,
-    "delivered_at": null,
-    "created_at": "2025-10-06 02:25:03",
-    "updated_at": null
-  }
-}
-```
-
-**Respostas de Erro**:
-
-**404 - Cliente não encontrado**:
-```json
-{
-  "error": "CustomerNotFound",
-  "message": "Customer not found with ID: 70fca607-4b7b-45d8-b8e8-99eeaca2ae82"
+    "id": "ff0e9400-o22l-41n4-k716-446655440000",
+    "customer_id": "dd0e9288-m00j-29l2-i594-224433228888",
+    "category_id": "ee0e9399-n11k-30m3-j605-335544339999",
+    "description": "Venda de produtos - Nota Fiscal #1111",
+    "amount": "18500.75",
+    "issue_date": "2025-10-07",
+    "due_date": "2025-11-06",
+    "status": "pending",
+    "received_at": null,
+    "receiving_notes": null,
+    "created_at": "2025-10-07T19:00:00+00:00",
+    "updated_at": "2025-10-07T19:00:00+00:00"
+  },
+  "message": "Account receivable created successfully"
 }
 ```
 
 ---
 
-### 6. Buscar Pedido
+### Receive Account Receivable
 
-#### `GET /v1/orders/{id}`
+**Endpoint:** `POST /api/v1/accounts-receivable/{id}/receive`
 
-Retorna os detalhes de um pedido específico, incluindo todos os itens.
+Registra o recebimento de uma conta a receber.
 
-**Autenticação**: Requerida (JWT)
+#### Path Parameters
 
-**Path Parameters**:
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| `id` | UUID | ID do pedido |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | uuid | Yes | ID da conta a receber |
 
-**Exemplo de Requisição**:
+#### Request Body
+
+```json
+{
+  "notes": "Recebido via PIX"
+}
+```
+
+#### Request
+
 ```bash
-curl -X GET http://localhost:9003/api/v1/orders/526d715b-13a4-4328-8935-b78d63cfc9ef \
-  -H "Authorization: Bearer {token}"
-```
-
-**Resposta de Sucesso (200)**:
-```json
-{
-  "data": {
-    "id": "526d715b-13a4-4328-8935-b78d63cfc9ef",
-    "order_number": "ORD-2025-0002",
-    "customer_id": "70fca607-4b7b-45d8-b8e8-99eeaca2ae82",
-    "status": "confirmed",
-    "subtotal": 3999.98,
-    "discount": 5.00,
-    "total": 3994.98,
-    "payment_status": "pending",
-    "payment_method": null,
-    "notes": "Pedido via API",
-    "items_count": 1,
-    "items": [
-      {
-        "id": "abc123...",
-        "product_id": "0eb5e387-d850-442e-8c8f-80f4fcec287f",
-        "product_name": "Notebook Dell Inspiron",
-        "sku": "NOTE-DELL-001",
-        "quantity": 2,
-        "unit_price": 1999.99,
-        "subtotal": 3999.98,
-        "discount": 5.00,
-        "total": 3994.98,
-        "created_at": "2025-10-06 02:30:00",
-        "updated_at": null
-      }
-    ],
-    "confirmed_at": "2025-10-06 02:34:21",
-    "cancelled_at": null,
-    "delivered_at": null,
-    "created_at": "2025-10-06 02:25:03",
-    "updated_at": "2025-10-06 02:34:21"
-  }
-}
-```
-
-**Respostas de Erro**:
-
-**404 - Pedido não encontrado**:
-```json
-{
-  "error": "OrderNotFound",
-  "message": "Order not found with ID: 526d715b-13a4-4328-8935-b78d63cfc9ef"
-}
-```
-
----
-
-### 7. Adicionar Item ao Pedido
-
-#### `POST /v1/orders/{id}/items`
-
-Adiciona um item ao pedido. O produto é buscado automaticamente no **Inventory Service**.
-
-**Autenticação**: Requerida (JWT)
-
-**⚠️ Importante**: O pedido deve estar em status `draft` para adicionar itens.
-
-**Path Parameters**:
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| `id` | UUID | ID do pedido |
-
-**Body Parameters**:
-```json
-{
-  "product_id": "0eb5e387-d850-442e-8c8f-80f4fcec287f",
-  "quantity": 2,
-  "discount": 5.00
-}
-```
-
-**Validações**:
-- `product_id`: obrigatório, UUID válido, produto deve existir no Inventory
-- `quantity`: obrigatório, inteiro >= 1
-- `discount`: opcional, decimal >= 0
-
-**Exemplo de Requisição**:
-```bash
-curl -X POST http://localhost:9003/api/v1/orders/526d715b-13a4-4328-8935-b78d63cfc9ef/items \
+curl -X POST http://localhost:9004/api/v1/accounts-receivable/ff0e9400-o22l-41n4-k716-446655440000/receive \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer {token}" \
   -d '{
-    "product_id": "0eb5e387-d850-442e-8c8f-80f4fcec287f",
-    "quantity": 2,
-    "discount": 5.00
+    "notes": "Recebido via PIX"
   }'
 ```
 
-**Resposta de Sucesso (200)**:
+#### Response (200 OK)
+
 ```json
 {
-  "message": "Item added to order successfully",
   "data": {
-    "id": "526d715b-13a4-4328-8935-b78d63cfc9ef",
-    "order_number": "ORD-2025-0002",
-    "customer_id": "70fca607-4b7b-45d8-b8e8-99eeaca2ae82",
-    "status": "draft",
-    "subtotal": 3999.98,
-    "discount": 5.00,
-    "total": 3994.98,
-    "payment_status": "pending",
-    "payment_method": null,
-    "notes": "Pedido via API",
-    "items_count": 1,
-    "items": [
-      {
-        "id": "abc123...",
-        "product_id": "0eb5e387-d850-442e-8c8f-80f4fcec287f",
-        "product_name": "Notebook Dell Inspiron",
-        "sku": "NOTE-DELL-001",
-        "quantity": 2,
-        "unit_price": 1999.99,
-        "subtotal": 3999.98,
-        "discount": 5.00,
-        "total": 3994.98,
-        "created_at": "2025-10-06 02:30:00",
-        "updated_at": null
-      }
-    ],
-    "confirmed_at": null,
-    "cancelled_at": null,
-    "delivered_at": null,
-    "created_at": "2025-10-06 02:25:03",
-    "updated_at": "2025-10-06 02:30:00"
+    "id": "ff0e9400-o22l-41n4-k716-446655440000",
+    "customer_id": "dd0e9288-m00j-29l2-i594-224433228888",
+    "category_id": "ee0e9399-n11k-30m3-j605-335544339999",
+    "description": "Venda de produtos - Nota Fiscal #1111",
+    "amount": "18500.75",
+    "issue_date": "2025-10-07",
+    "due_date": "2025-11-06",
+    "status": "received",
+    "received_at": "2025-10-20T11:15:00+00:00",
+    "receiving_notes": "Recebido via PIX",
+    "created_at": "2025-10-07T19:00:00+00:00",
+    "updated_at": "2025-10-20T11:15:00+00:00"
+  },
+  "message": "Account receivable received successfully"
+}
+```
+
+---
+
+## ❌ Error Handling
+
+### Standard Error Response
+
+Todos os erros seguem o formato padrão:
+
+```json
+{
+  "error": "ErrorType",
+  "message": "Error description"
+}
+```
+
+### HTTP Status Codes
+
+| Status Code | Description |
+|-------------|-------------|
+| `200` | OK - Request successful |
+| `201` | Created - Resource created successfully |
+| `400` | Bad Request - Invalid input data |
+| `404` | Not Found - Resource not found |
+| `409` | Conflict - Resource already exists |
+| `422` | Unprocessable Entity - Validation failed |
+| `500` | Internal Server Error |
+| `503` | Service Unavailable |
+
+### Common Error Types
+
+#### 404 - Resource Not Found
+
+```json
+{
+  "error": "SupplierNotFoundException",
+  "message": "Supplier not found"
+}
+```
+
+#### 409 - Conflict
+
+```json
+{
+  "error": "SupplierAlreadyExistsException",
+  "message": "A supplier with this identifier already exists"
+}
+```
+
+#### 422 - Validation Error
+
+```json
+{
+  "error": "Validation failed",
+  "message": "The given data was invalid.",
+  "errors": {
+    "name": ["Supplier name is required"],
+    "amount": ["Amount must be greater than zero"]
   }
 }
 ```
 
-**Respostas de Erro**:
+#### 400 - Bad Request
 
-**404 - Produto não encontrado**:
 ```json
 {
-  "error": "ProductNotFound",
-  "message": "Product not found in Inventory Service: 0eb5e387-d850-442e-8c8f-80f4fcec287f"
-}
-```
-
-**422 - Pedido não está em draft**:
-```json
-{
-  "error": "DomainError",
-  "message": "Cannot add items to a non-draft order"
-}
-```
-
-**422 - Produto já existe no pedido**:
-```json
-{
-  "error": "DomainError",
-  "message": "Product already exists in the order. Update quantity instead."
+  "error": "InvalidSupplierException",
+  "message": "Supplier data is invalid"
 }
 ```
 
 ---
 
-### 8. Confirmar Pedido
+## 📊 Status Enums
 
-#### `POST /v1/orders/{id}/confirm`
+### Payment Status (Accounts Payable)
 
-Confirma o pedido, mudando seu status de `draft` para `pending`.
+| Status | Description |
+|--------|-------------|
+| `pending` | Aguardando pagamento |
+| `paid` | Pago |
+| `overdue` | Vencido |
+| `cancelled` | Cancelado |
 
-**Autenticação**: Requerida (JWT)
+### Receivable Status (Accounts Receivable)
 
-**⚠️ Importante**: 
-- O pedido deve estar em status `draft`
-- O pedido deve ter pelo menos 1 item
+| Status | Description |
+|--------|-------------|
+| `pending` | Aguardando recebimento |
+| `received` | Recebido |
+| `overdue` | Vencido |
+| `cancelled` | Cancelado |
 
-**Path Parameters**:
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| `id` | UUID | ID do pedido |
+### Category Type
 
-**Exemplo de Requisição**:
-```bash
-curl -X POST http://localhost:9003/api/v1/orders/526d715b-13a4-4328-8935-b78d63cfc9ef/confirm \
-  -H "Authorization: Bearer {token}"
-```
-
-**Resposta de Sucesso (200)**:
-```json
-{
-  "message": "Order confirmed successfully",
-  "data": {
-    "id": "526d715b-13a4-4328-8935-b78d63cfc9ef",
-    "order_number": "ORD-2025-0002",
-    "customer_id": "70fca607-4b7b-45d8-b8e8-99eeaca2ae82",
-    "status": "confirmed",
-    "subtotal": 3999.98,
-    "discount": 5.00,
-    "total": 3994.98,
-    "payment_status": "pending",
-    "payment_method": null,
-    "notes": "Pedido via API",
-    "items_count": 1,
-    "items": [...],
-    "confirmed_at": "2025-10-06 02:34:21",
-    "cancelled_at": null,
-    "delivered_at": null,
-    "created_at": "2025-10-06 02:25:03",
-    "updated_at": "2025-10-06 02:34:21"
-  }
-}
-```
-
-**Respostas de Erro**:
-
-**422 - Pedido não está em draft**:
-```json
-{
-  "error": "DomainError",
-  "message": "Only draft orders can be confirmed."
-}
-```
-
-**422 - Pedido vazio**:
-```json
-{
-  "error": "DomainError",
-  "message": "Cannot confirm an empty order."
-}
-```
+| Type | Description |
+|------|-------------|
+| `income` | Receita |
+| `expense` | Despesa |
 
 ---
 
-### 9. Cancelar Pedido
+## 🔗 Related Services
 
-#### `POST /v1/orders/{id}/cancel`
-
-Cancela um pedido, mudando seu status para `cancelled`.
-
-**Autenticação**: Requerida (JWT)
-
-**⚠️ Importante**: Não é possível cancelar pedidos já cancelados ou entregues.
-
-**Path Parameters**:
-| Parâmetro | Tipo | Descrição |
-|-----------|------|-----------|
-| `id` | UUID | ID do pedido |
-
-**Body Parameters**:
-```json
-{
-  "reason": "Cliente desistiu da compra"
-}
-```
-
-**Validações**:
-- `reason`: opcional, texto livre (máx. 500 caracteres)
-
-**Exemplo de Requisição**:
-```bash
-curl -X POST http://localhost:9003/api/v1/orders/352e52e8-851a-44c9-bdcc-37b03ab72931/cancel \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer {token}" \
-  -d '{
-    "reason": "Cliente desistiu da compra"
-  }'
-```
-
-**Resposta de Sucesso (200)**:
-```json
-{
-  "message": "Order cancelled successfully",
-  "data": {
-    "id": "352e52e8-851a-44c9-bdcc-37b03ab72931",
-    "order_number": "ORD-2025-0003",
-    "customer_id": "70fca607-4b7b-45d8-b8e8-99eeaca2ae82",
-    "status": "cancelled",
-    "subtotal": 0,
-    "discount": 0,
-    "total": 0,
-    "payment_status": "pending",
-    "payment_method": null,
-    "notes": "Pedido para cancelar\nCancellation Reason: Cliente desistiu da compra",
-    "items_count": 0,
-    "items": [],
-    "confirmed_at": null,
-    "cancelled_at": "2025-10-06 02:34:21",
-    "delivered_at": null,
-    "created_at": "2025-10-06 02:34:20",
-    "updated_at": "2025-10-06 02:34:21"
-  }
-}
-```
-
-**Respostas de Erro**:
-
-**422 - Pedido já cancelado ou entregue**:
-```json
-{
-  "error": "DomainError",
-  "message": "Cannot cancel an already cancelled or delivered order."
-}
-```
+- **Auth Service** (Port 9001) - Autenticação e autorização
+- **Inventory Service** (Port 9002) - Gestão de produtos
+- **Sales Service** (Port 9003) - Gestão de pedidos e vendas
 
 ---
 
-## Fluxo Completo de Venda
+## 📝 Notes
 
-### Exemplo: Criando uma venda do início ao fim
-
-```bash
-# 1. Login no Auth Service
-TOKEN=$(curl -s -X POST http://localhost:9001/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@example.com","password":"senha123"}' | jq -r '.data.access_token')
-
-# 2. Criar Cliente
-CUSTOMER=$(curl -s -X POST http://localhost:9003/api/v1/customers \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d '{
-    "name": "João Silva",
-    "email": "joao@example.com",
-    "phone": "11987654321",
-    "document": "11144477735",
-    "address_street": "Rua ABC",
-    "address_number": "100",
-    "address_city": "São Paulo",
-    "address_state": "SP",
-    "address_zip_code": "01234567"
-  }')
-
-CUSTOMER_ID=$(echo $CUSTOMER | jq -r '.data.id')
-
-# 3. Criar Pedido (draft)
-ORDER=$(curl -s -X POST http://localhost:9003/api/v1/orders \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d "{\"customer_id\": \"$CUSTOMER_ID\", \"notes\": \"Pedido urgente\"}")
-
-ORDER_ID=$(echo $ORDER | jq -r '.data.id')
-
-# 4. Buscar produto no Inventory
-PRODUCT_ID=$(curl -s http://localhost:9002/api/v1/products | jq -r '.data[0].id')
-
-# 5. Adicionar item ao pedido
-curl -s -X POST "http://localhost:9003/api/v1/orders/$ORDER_ID/items" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d "{\"product_id\": \"$PRODUCT_ID\", \"quantity\": 2, \"discount\": 10.00}"
-
-# 6. Confirmar pedido
-curl -s -X POST "http://localhost:9003/api/v1/orders/$ORDER_ID/confirm" \
-  -H "Authorization: Bearer $TOKEN"
-
-# 7. Consultar pedido final
-curl -s -X GET "http://localhost:9003/api/v1/orders/$ORDER_ID" \
-  -H "Authorization: Bearer $TOKEN" | jq
-```
+- Todos os valores monetários são retornados como strings para precisão decimal
+- Todas as datas seguem o formato ISO 8601
+- IDs são UUIDs v4
+- O serviço publica eventos no RabbitMQ para cada operação importante
 
 ---
 
-## Códigos de Status HTTP
-
-| Código | Descrição |
-|--------|-----------|
-| `200` | Sucesso |
-| `201` | Recurso criado com sucesso |
-| `400` | Requisição inválida |
-| `401` | Não autenticado |
-| `404` | Recurso não encontrado |
-| `409` | Conflito (email/documento duplicado) |
-| `422` | Erro de validação ou domínio |
-| `500` | Erro interno do servidor |
-
----
-
-## Validações de Domínio
-
-### CPF e CNPJ
-
-O sistema valida automaticamente CPF e CNPJ brasileiros:
-
-**CPF**:
-- 11 dígitos numéricos
-- Dígitos verificadores válidos
-- Não aceita sequências (111.111.111-11, etc)
-
-**CNPJ**:
-- 14 dígitos numéricos
-- Dígitos verificadores válidos
-
-**Formatos aceitos**:
-- Apenas números: `11144477735` ou `12345678000195`
-- Com formatação: `111.444.777-35` ou `12.345.678/0001-95`
-
----
-
-## Notas Importantes
-
-### Integração com Inventory Service
-
-- Ao adicionar um item ao pedido via `POST /v1/orders/{id}/items`, o sistema busca automaticamente as informações do produto no **Inventory Service**
-- São copiados: nome, SKU e preço (snapshot no momento da venda)
-- Se o produto não existir no Inventory, retorna erro 404
-
-### OrderNumber (Número do Pedido)
-
-- Gerado automaticamente no formato `ORD-YYYY-NNNN`
-- `YYYY`: Ano atual
-- `NNNN`: Sequencial incremental (reinicia a cada ano)
-- Exemplo: `ORD-2025-0001`, `ORD-2025-0002`, etc.
-
-### Cálculo de Totais
-
-- `subtotal` = soma de (unit_price × quantity) de todos os itens
-- `total` = subtotal - discount total
-- Recalculado automaticamente ao adicionar/remover itens
-
----
-
-## Suporte
-
-Para mais informações ou suporte:
-- **Documentação do Projeto**: `/docs`
-- **Health Check**: `GET /health`
-- **Postman Collection**: Disponível em `/postman-collection.json`
+**Version:** 1.0.0  
+**Last Updated:** 2025-10-07  
+**Maintainer:** Development Team
