@@ -52,8 +52,21 @@ return Application::configure(basePath: dirname(__DIR__))
                     ], 422);
                 }
                 
-                // Determine status code
-                $status = method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500;
+                // Map domain exceptions to HTTP status codes using class name matching
+                $exceptionClass = get_class($e);
+                $status = 500; // Default to 500
+                
+                // Map by class name
+                if (str_ends_with($exceptionClass, 'NotFoundException')) {
+                    $status = 404;
+                } elseif (str_ends_with($exceptionClass, 'AlreadyExistsException')) {
+                    $status = 409; // Conflict
+                } elseif (str_contains($exceptionClass, 'Invalid') && 
+                          str_contains($exceptionClass, 'Domain\\Exceptions')) {
+                    $status = 422; // Unprocessable Entity
+                } elseif (method_exists($e, 'getStatusCode')) {
+                    $status = $e->getStatusCode();
+                }
                 
                 $response = [
                     'error' => class_basename($e),
