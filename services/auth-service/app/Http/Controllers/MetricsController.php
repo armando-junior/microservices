@@ -34,29 +34,29 @@ class MetricsController extends Controller
         
         // Business metrics - Authentication
         $loginAttempts = cache()->get('metrics:login_attempts_total', 0);
-        $metrics[] = '# HELP login_attempts_total Total login attempts';
-        $metrics[] = '# TYPE login_attempts_total counter';
-        $metrics[] = sprintf('login_attempts_total{service="auth-service"} %d', $loginAttempts);
+        $metrics[] = '# HELP auth_login_attempts_total Total login attempts';
+        $metrics[] = '# TYPE auth_login_attempts_total counter';
+        $metrics[] = sprintf('auth_login_attempts_total{service="auth-service"} %d', $loginAttempts);
         
         $loginSuccess = cache()->get('metrics:login_success_total', 0);
-        $metrics[] = '# HELP login_success_total Total successful logins';
-        $metrics[] = '# TYPE login_success_total counter';
-        $metrics[] = sprintf('login_success_total{service="auth-service"} %d', $loginSuccess);
+        $metrics[] = '# HELP auth_login_success_total Total successful logins';
+        $metrics[] = '# TYPE auth_login_success_total counter';
+        $metrics[] = sprintf('auth_login_success_total{service="auth-service"} %d', $loginSuccess);
         
         $loginFailed = cache()->get('metrics:login_failed_total', 0);
-        $metrics[] = '# HELP login_failed_total Total failed logins';
-        $metrics[] = '# TYPE login_failed_total counter';
-        $metrics[] = sprintf('login_failed_total{service="auth-service"} %d', $loginFailed);
+        $metrics[] = '# HELP auth_login_failed_total Total failed logins';
+        $metrics[] = '# TYPE auth_login_failed_total counter';
+        $metrics[] = sprintf('auth_login_failed_total{service="auth-service"} %d', $loginFailed);
         
         $usersRegistered = cache()->get('metrics:users_registered_total', 0);
-        $metrics[] = '# HELP users_registered_total Total users registered';
-        $metrics[] = '# TYPE users_registered_total counter';
-        $metrics[] = sprintf('users_registered_total{service="auth-service"} %d', $usersRegistered);
+        $metrics[] = '# HELP auth_users_registered_total Total users registered';
+        $metrics[] = '# TYPE auth_users_registered_total counter';
+        $metrics[] = sprintf('auth_users_registered_total{service="auth-service"} %d', $usersRegistered);
         
         $tokensGenerated = cache()->get('metrics:tokens_generated_total', 0);
-        $metrics[] = '# HELP tokens_generated_total Total JWT tokens generated';
-        $metrics[] = '# TYPE tokens_generated_total counter';
-        $metrics[] = sprintf('tokens_generated_total{service="auth-service"} %d', $tokensGenerated);
+        $metrics[] = '# HELP auth_tokens_generated_total Total JWT tokens generated';
+        $metrics[] = '# TYPE auth_tokens_generated_total counter';
+        $metrics[] = sprintf('auth_tokens_generated_total{service="auth-service"} %d', $tokensGenerated);
         
         // Response time (simplified - using last request time)
         $responseTime = cache()->get('metrics:http_request_duration_seconds', 0.1);

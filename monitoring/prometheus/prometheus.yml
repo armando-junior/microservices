@@ -42,25 +42,31 @@ scrape_configs:
       - source_labels: [__address__]
         target_label: instance
         replacement: 'auth-service'
+      - target_label: service
+        replacement: 'auth-service'
 
   # Inventory Service
   - job_name: 'inventory-service'
     metrics_path: '/metrics'
     static_configs:
-      - targets: ['inventory-service:8001']
+      - targets: ['inventory-service:8000']
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
+        replacement: 'inventory-service'
+      - target_label: service
         replacement: 'inventory-service'
 
   # Sales Service
   - job_name: 'sales-service'
     metrics_path: '/metrics'
     static_configs:
-      - targets: ['sales-service:8002']
+      - targets: ['sales-service:8000']
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
+        replacement: 'sales-service'
+      - target_label: service
         replacement: 'sales-service'
 
   # PostgreSQL Exporter - Auth DB

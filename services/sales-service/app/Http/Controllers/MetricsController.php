@@ -34,25 +34,25 @@ class MetricsController extends Controller
         
         // Business metrics - Orders
         $ordersCreated = cache()->get('metrics:orders_created_total', 0);
-        $metrics[] = '# HELP orders_created_total Total orders created';
-        $metrics[] = '# TYPE orders_created_total counter';
-        $metrics[] = sprintf('orders_created_total{service="sales-service"} %d', $ordersCreated);
+        $metrics[] = '# HELP sales_orders_created_total Total orders created';
+        $metrics[] = '# TYPE sales_orders_created_total counter';
+        $metrics[] = sprintf('sales_orders_created_total{service="sales-service"} %d', $ordersCreated);
         
         $ordersConfirmed = cache()->get('metrics:orders_confirmed_total', 0);
-        $metrics[] = '# HELP orders_confirmed_total Total orders confirmed';
-        $metrics[] = '# TYPE orders_confirmed_total counter';
-        $metrics[] = sprintf('orders_confirmed_total{service="sales-service"} %d', $ordersConfirmed);
+        $metrics[] = '# HELP sales_orders_confirmed_total Total orders confirmed';
+        $metrics[] = '# TYPE sales_orders_confirmed_total counter';
+        $metrics[] = sprintf('sales_orders_confirmed_total{service="sales-service"} %d', $ordersConfirmed);
         
         $ordersCancelled = cache()->get('metrics:orders_cancelled_total', 0);
-        $metrics[] = '# HELP orders_cancelled_total Total orders cancelled';
-        $metrics[] = '# TYPE orders_cancelled_total counter';
-        $metrics[] = sprintf('orders_cancelled_total{service="sales-service"} %d', $ordersCancelled);
+        $metrics[] = '# HELP sales_orders_cancelled_total Total orders cancelled';
+        $metrics[] = '# TYPE sales_orders_cancelled_total counter';
+        $metrics[] = sprintf('sales_orders_cancelled_total{service="sales-service"} %d', $ordersCancelled);
         
         // Business metrics - Customers
         $customersCreated = cache()->get('metrics:customers_created_total', 0);
-        $metrics[] = '# HELP customers_created_total Total customers created';
-        $metrics[] = '# TYPE customers_created_total counter';
-        $metrics[] = sprintf('customers_created_total{service="sales-service"} %d', $customersCreated);
+        $metrics[] = '# HELP sales_customers_created_total Total customers created';
+        $metrics[] = '# TYPE sales_customers_created_total counter';
+        $metrics[] = sprintf('sales_customers_created_total{service="sales-service"} %d', $customersCreated);
         
         // Response time (simplified - using last request time)
         $responseTime = cache()->get('metrics:http_request_duration_seconds', 0.1);

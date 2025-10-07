@@ -34,29 +34,29 @@ class MetricsController extends Controller
         
         // Business metrics - Products
         $productsCreated = cache()->get('metrics:products_created_total', 0);
-        $metrics[] = '# HELP products_created_total Total products created';
-        $metrics[] = '# TYPE products_created_total counter';
-        $metrics[] = sprintf('products_created_total{service="inventory-service"} %d', $productsCreated);
+        $metrics[] = '# HELP inventory_products_created_total Total products created';
+        $metrics[] = '# TYPE inventory_products_created_total counter';
+        $metrics[] = sprintf('inventory_products_created_total{service="inventory-service"} %d', $productsCreated);
         
         $productsUpdated = cache()->get('metrics:products_updated_total', 0);
-        $metrics[] = '# HELP products_updated_total Total products updated';
-        $metrics[] = '# TYPE products_updated_total counter';
-        $metrics[] = sprintf('products_updated_total{service="inventory-service"} %d', $productsUpdated);
+        $metrics[] = '# HELP inventory_products_updated_total Total products updated';
+        $metrics[] = '# TYPE inventory_products_updated_total counter';
+        $metrics[] = sprintf('inventory_products_updated_total{service="inventory-service"} %d', $productsUpdated);
         
         $stockAdjustments = cache()->get('metrics:stock_adjustments_total', 0);
-        $metrics[] = '# HELP stock_adjustments_total Total stock adjustments';
-        $metrics[] = '# TYPE stock_adjustments_total counter';
-        $metrics[] = sprintf('stock_adjustments_total{service="inventory-service"} %d', $stockAdjustments);
+        $metrics[] = '# HELP inventory_stock_adjustments_total Total stock adjustments';
+        $metrics[] = '# TYPE inventory_stock_adjustments_total counter';
+        $metrics[] = sprintf('inventory_stock_adjustments_total{service="inventory-service"} %d', $stockAdjustments);
         
         $lowStockProducts = cache()->get('metrics:products_low_stock', 0);
-        $metrics[] = '# HELP products_low_stock Products with low stock';
-        $metrics[] = '# TYPE products_low_stock gauge';
-        $metrics[] = sprintf('products_low_stock{service="inventory-service"} %d', $lowStockProducts);
+        $metrics[] = '# HELP inventory_low_stock_products Products with low stock';
+        $metrics[] = '# TYPE inventory_low_stock_products gauge';
+        $metrics[] = sprintf('inventory_low_stock_products{service="inventory-service"} %d', $lowStockProducts);
         
         $categoriesCreated = cache()->get('metrics:categories_created_total', 0);
-        $metrics[] = '# HELP categories_created_total Total categories created';
-        $metrics[] = '# TYPE categories_created_total counter';
-        $metrics[] = sprintf('categories_created_total{service="inventory-service"} %d', $categoriesCreated);
+        $metrics[] = '# HELP inventory_categories_created_total Total categories created';
+        $metrics[] = '# TYPE inventory_categories_created_total counter';
+        $metrics[] = sprintf('inventory_categories_created_total{service="inventory-service"} %d', $categoriesCreated);
         
         // Response time (simplified - using last request time)
         $responseTime = cache()->get('metrics:http_request_duration_seconds', 0.1);
