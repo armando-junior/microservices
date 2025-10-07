@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 /**
@@ -12,12 +12,13 @@ use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
  * 
  * Base class para testes de integração que usam banco de dados.
  * 
- * Note: RefreshDatabase trait handles database migrations automatically.
- * Do NOT call migrate:fresh manually as it causes VACUUM errors in CI.
+ * Uses DatabaseMigrations trait which runs migrations before each test
+ * and rolls back after. This is more suitable for integration tests
+ * and avoids transaction conflicts in CI environments.
  */
 abstract class IntegrationTestCase extends BaseTestCase
 {
-    use RefreshDatabase;
+    use DatabaseMigrations;
 
     /**
      * Creates the application.
