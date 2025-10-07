@@ -29,9 +29,7 @@ volumes:
   inventory-service-vendor:
   sales-service-vendor:
   
-  # Monitoring
-  prometheus-data:
-  grafana-data:
+  # Additional Monitoring
   alertmanager-data:
 
 services:
@@ -433,57 +431,6 @@ services:
       retries: 3
       start_period: 60s
     restart: unless-stopped
-
-  # ==========================================
-  # MONITORING - Prometheus
-  # ==========================================
-  
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus-data:/prometheus
-    networks:
-      - microservices-net
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # ==========================================
-  # MONITORING - Grafana
-  # ==========================================
-  
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
-      GF_USERS_ALLOW_SIGN_UP: 'false'
-    ports:
-      - "3000:3000"
-    volumes:
-      - grafana-data:/var/lib/grafana
-      - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning:ro
-    networks:
-      - microservices-net
-    depends_on:
-      - prometheus
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   # ==========================================
   # TRACING - Jaeger
