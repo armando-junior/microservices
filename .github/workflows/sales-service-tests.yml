@@ -70,6 +70,14 @@ jobs:
         working-directory: services/sales-service
         run: composer install --prefer-dist --no-interaction --no-progress
 
+      - name: Prepare Laravel Environment
+        working-directory: services/sales-service
+        run: |
+          cp .env.example .env 2>/dev/null || echo "APP_ENV=testing" > .env
+          php artisan key:generate
+          touch database/database.sqlite
+          chmod -R 777 storage bootstrap/cache
+
       - name: Run Integration Tests
         working-directory: services/sales-service
         run: php vendor/bin/phpunit tests/Integration --testdox
@@ -131,6 +139,14 @@ jobs:
       - name: Install Dependencies
         working-directory: services/sales-service
         run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Prepare Laravel Environment
+        working-directory: services/sales-service
+        run: |
+          cp .env.example .env 2>/dev/null || echo "APP_ENV=testing" > .env
+          php artisan key:generate
+          touch database/database.sqlite
+          chmod -R 777 storage bootstrap/cache
 
       - name: Run Tests with Coverage
         working-directory: services/sales-service
