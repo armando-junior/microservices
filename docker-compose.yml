@@ -137,7 +137,7 @@ services:
   redis:
     image: redis:7.2-alpine
     container_name: redis
-    command: redis-server --appendonly yes --requirepass redis123
+    command: redis-server --appendonly yes --requirepass redis_password
     ports:
       - "6379:6379"
     volumes:
@@ -267,7 +267,7 @@ services:
       REDIS_HOST: redis
       REDIS_PASSWORD: redis_password
       REDIS_PORT: 6379
-      CACHE_STORE: array
+      CACHE_STORE: redis
       SESSION_DRIVER: file
       
       # RabbitMQ
@@ -332,7 +332,7 @@ services:
       REDIS_HOST: redis
       REDIS_PASSWORD: redis_password
       REDIS_PORT: 6379
-      CACHE_STORE: array
+      CACHE_STORE: redis
       SESSION_DRIVER: file
       
       # RabbitMQ
@@ -391,7 +391,7 @@ services:
       REDIS_HOST: redis
       REDIS_PASSWORD: redis_password
       REDIS_PORT: 6379
-      CACHE_STORE: array
+      CACHE_STORE: redis
       SESSION_DRIVER: file
       
       # RabbitMQ

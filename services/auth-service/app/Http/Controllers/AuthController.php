@@ -135,16 +135,19 @@ class AuthController extends Controller
     public function logout(Request $request): JsonResponse
     {
         try {
-            $tokenJti = $request->attributes->get('token_jti');
-
-            if (!$tokenJti) {
+            // Extrair o token do header Authorization
+            $authHeader = $request->header('Authorization');
+            
+            if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
                 return response()->json([
                     'error' => 'Invalid token',
-                    'message' => 'Token JTI not found',
+                    'message' => 'Authorization token not provided',
                 ], 400);
             }
+            
+            $token = substr($authHeader, 7); // Remove "Bearer "
 
-            $this->logoutUserUseCase->execute($tokenJti);
+            $this->logoutUserUseCase->execute($token);
 
             return response()->json([
                 'message' => 'Logout successful',

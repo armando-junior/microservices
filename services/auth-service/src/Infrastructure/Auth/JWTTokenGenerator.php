@@ -84,16 +84,19 @@ final class JWTTokenGenerator implements TokenGeneratorInterface
         try {
             $decoded = $this->decode($token);
             
-            // Adiciona o token na blacklist no Redis
+            // Adiciona o JTI do token na blacklist no Redis
             // A chave expira junto com o token
             $expiresAt = $decoded['exp'] ?? time();
             $ttl = max(0, $expiresAt - time());
+            $jti = $decoded['jti'] ?? null;
             
-            Cache::put(
-                $this->getBlacklistKey($token),
-                true,
-                $ttl
-            );
+            if ($jti) {
+                Cache::put(
+                    $this->getBlacklistKey($jti),
+                    true,
+                    $ttl
+                );
+            }
         } catch (\Exception $e) {
             // Se não conseguir decodificar, ignora (token já é inválido)
         }
@@ -104,15 +107,26 @@ final class JWTTokenGenerator implements TokenGeneratorInterface
      */
     private function isBlacklisted(string $token): bool
     {
-        return Cache::has($this->getBlacklistKey($token));
+        try {
+            $decoded = $this->decode($token);
+            $jti = $decoded['jti'] ?? null;
+            
+            if (!$jti) {
+                return false;
+            }
+            
+            return Cache::has($this->getBlacklistKey($jti));
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
     /**
-     * Gera a chave da blacklist para o token
+     * Gera a chave da blacklist para o JTI do token
      */
-    private function getBlacklistKey(string $token): string
+    private function getBlacklistKey(string $jti): string
     {
-        return 'jwt:blacklist:' . hash('sha256', $token);
+        return "jwt:blacklist:{$jti}";
     }
 }
 
