@@ -59,13 +59,13 @@ class ListCustomersUseCaseTest extends IntegrationTestCase
     /** @test */
     public function it_paginates_customers(): void
     {
-        // Create 5 customers with unique and VALID CPFs
-        $cpfs = [
-            '11144477735',  // Valid CPF
-            '52998224725',  // Valid CPF
-            '82178537464',  // Valid CPF
-            '72186361581',  // Valid CPF
-            '29676067713'   // Valid CPF
+        // Create 5 customers with unique and VALID CPFs/CNPJs
+        $documents = [
+            '11144477735',        // Valid CPF
+            '52998224725',        // Valid CPF  
+            '40442820135',        // Valid CPF
+            '84434916000',        // Valid CPF
+            '11222333000181'      // Valid CNPJ (from other test)
         ];
         $names = ['Customer One', 'Customer Two', 'Customer Three', 'Customer Four', 'Customer Five'];
         
@@ -73,7 +73,7 @@ class ListCustomersUseCaseTest extends IntegrationTestCase
             $this->createCustomer(
                 $names[$i],
                 "customer" . ($i + 1) . "@example.com",
-                $cpfs[$i]
+                $documents[$i]
             );
         }
 
