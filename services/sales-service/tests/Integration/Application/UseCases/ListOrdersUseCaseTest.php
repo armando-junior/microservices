@@ -98,8 +98,8 @@ class ListOrdersUseCaseTest extends IntegrationTestCase
         $this->createOrder($this->customer);
         $this->createOrder($this->customer);
 
-        // Create another customer and order
-        $customer2 = $this->createCustomer('another@example.com');
+        // Create another customer with different CPF and order
+        $customer2 = $this->createCustomer('another@example.com', '52998224725');
         $this->createOrder($customer2);
 
         // Filter by first customer
@@ -136,14 +136,14 @@ class ListOrdersUseCaseTest extends IntegrationTestCase
         $this->assertEquals('draft', $draftOrders[0]->status);
     }
 
-    private function createCustomer(string $email = 'test@example.com'): Customer
+    private function createCustomer(string $email = 'test@example.com', string $cpf = '11144477735'): Customer
     {
         $customer = Customer::create(
             id: CustomerId::generate(),
             name: CustomerName::fromString('Test Customer'),
             email: Email::fromString($email),
             phone: Phone::fromString('11987654321'),
-            document: Document::fromString('11144477735')
+            document: Document::fromString($cpf)
         );
 
         $this->customerRepository->save($customer);

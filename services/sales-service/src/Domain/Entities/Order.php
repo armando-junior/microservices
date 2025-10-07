@@ -221,6 +221,25 @@ final class Order
     }
 
     /**
+     * Marca o pedido como entregue
+     */
+    public function deliver(): void
+    {
+        if (!$this->status->isConfirmed()) {
+            throw new \DomainException('Only confirmed orders can be delivered');
+        }
+
+        $this->status = OrderStatus::delivered();
+        $this->deliveredAt = new DateTimeImmutable();
+        $this->touch();
+
+        $this->recordEvent('OrderDelivered', [
+            'order_id' => $this->id->value(),
+            'order_number' => $this->orderNumber->value(),
+        ]);
+    }
+
+    /**
      * Atualiza status do pedido
      */
     public function updateStatus(OrderStatus $newStatus): void

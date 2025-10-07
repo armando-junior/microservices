@@ -133,7 +133,11 @@ class ConfirmOrderUseCaseTest extends IntegrationTestCase
         $this->assertNotNull($result->confirmedAt);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
     public function it_publishes_domain_event_on_confirmation(): void
     {
         $customer = $this->createCustomer();
@@ -151,11 +155,18 @@ class ConfirmOrderUseCaseTest extends IntegrationTestCase
         $order->addItem($item);
         $this->orderRepository->save($order);
 
-        // Expect publishAll to be called once
-        $this->eventPublisher->shouldReceive('publishAll')->once();
+        // Create a fresh mock with exact expectation
+        $eventPublisher = Mockery::mock(RabbitMQEventPublisher::class);
+        $eventPublisher->shouldReceive('publishAll')->once()->andReturn(true);
+
+        // Recreate UseCase with the new mock
+        $useCase = new ConfirmOrderUseCase(
+            $this->orderRepository,
+            $eventPublisher
+        );
 
         // Confirm - this should publish events (mocked)
-        $result = $this->useCase->execute($order->getId()->value());
+        $result = $useCase->execute($order->getId()->value());
 
         // Verify order was confirmed
         $this->assertEquals('confirmed', $result->status);

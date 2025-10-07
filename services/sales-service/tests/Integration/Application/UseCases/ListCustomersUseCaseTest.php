@@ -61,8 +61,8 @@ class ListCustomersUseCaseTest extends IntegrationTestCase
         
         for ($i = 1; $i <= 5; $i++) {
             $this->createCustomer(
-                "Customer {$i}",
-                "customer{$i}@example.com",
+                "Customer " . $i,
+                "customer" . $i . "@example.com",
                 $cpfs[$i - 1]
             );
         }

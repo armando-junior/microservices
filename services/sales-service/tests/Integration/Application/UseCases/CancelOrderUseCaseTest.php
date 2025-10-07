@@ -174,7 +174,11 @@ class CancelOrderUseCaseTest extends IntegrationTestCase
         $this->useCase->execute($dto);
     }
 
-    /** @test */
+    /**
+     * @test
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
     public function it_publishes_domain_event_on_cancellation(): void
     {
         $customer = $this->createCustomer();
@@ -185,11 +189,18 @@ class CancelOrderUseCaseTest extends IntegrationTestCase
             reason: 'Stock issue'
         );
 
-        // Expect publishAll to be called once
-        $this->eventPublisher->shouldReceive('publishAll')->once();
+        // Create a fresh mock with exact expectation
+        $eventPublisher = Mockery::mock(RabbitMQEventPublisher::class);
+        $eventPublisher->shouldReceive('publishAll')->once()->andReturn(true);
+
+        // Recreate UseCase with the new mock
+        $useCase = new CancelOrderUseCase(
+            $this->orderRepository,
+            $eventPublisher
+        );
 
         // Cancel - this should publish events (mocked)
-        $result = $this->useCase->execute($dto);
+        $result = $useCase->execute($dto);
 
         // Verify order was cancelled
         $this->assertEquals('cancelled', $result->status);
