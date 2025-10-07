@@ -28,6 +28,11 @@ volumes:
   auth-service-vendor:
   inventory-service-vendor:
   sales-service-vendor:
+  
+  # Monitoring
+  prometheus-data:
+  grafana-data:
+  alertmanager-data:
 
 services:
   # ==========================================
@@ -575,4 +580,172 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+
+  # ==========================================
+  # MONITORING & OBSERVABILITY
+  # ==========================================
+  
+  # Prometheus - Metrics Collection
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus/rules:/etc/prometheus/rules
+      - prometheus-data:/prometheus
+    networks:
+      - microservices-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Grafana - Visualization
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_INSTALL_PLUGINS=redis-datasource
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - microservices-net
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Alertmanager - Alert Management
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    container_name: alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager:/etc/alertmanager
+      - alertmanager-data:/alertmanager
+    networks:
+      - microservices-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9093/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Node Exporter - Host Metrics
+  node-exporter:
+    image: prom/node-exporter:v1.7.0
+    container_name: node-exporter
+    command:
+      - '--path.rootfs=/host'
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    ports:
+      - "9100:9100"
+    volumes:
+      - /:/host:ro,rslave
+    networks:
+      - microservices-net
+    restart: unless-stopped
+
+  # cAdvisor - Container Metrics
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    container_name: cadvisor
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - microservices-net
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg
+
+  # Redis Exporter - Redis Metrics
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.55.0
+    container_name: redis-exporter
+    environment:
+      - REDIS_ADDR=redis:6379
+    ports:
+      - "9121:9121"
+    networks:
+      - microservices-net
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # PostgreSQL Exporter - Auth DB
+  postgres-exporter-auth:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: postgres-exporter-auth
+    environment:
+      - DATA_SOURCE_NAME=postgresql://auth_user:auth_pass@auth-db:5432/auth_db?sslmode=disable
+    ports:
+      - "9187:9187"
+    networks:
+      - microservices-net
+    depends_on:
+      - auth-db
+    restart: unless-stopped
+
+  # PostgreSQL Exporter - Inventory DB
+  postgres-exporter-inventory:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: postgres-exporter-inventory
+    environment:
+      - DATA_SOURCE_NAME=postgresql://inventory_user:inventory_pass@inventory-db:5432/inventory_db?sslmode=disable
+    ports:
+      - "9188:9187"
+    networks:
+      - microservices-net
+    depends_on:
+      - inventory-db
+    restart: unless-stopped
+
+  # PostgreSQL Exporter - Sales DB
+  postgres-exporter-sales:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: postgres-exporter-sales
+    environment:
+      - DATA_SOURCE_NAME=postgresql://sales_user:sales_pass@sales-db:5432/sales_db?sslmode=disable
+    ports:
+      - "9189:9187"
+    networks:
+      - microservices-net
+    depends_on:
+      - sales-db
+    restart: unless-stopped
 
