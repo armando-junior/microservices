@@ -59,8 +59,14 @@ class ListCustomersUseCaseTest extends IntegrationTestCase
     /** @test */
     public function it_paginates_customers(): void
     {
-        // Create 5 customers with unique CPFs
-        $cpfs = ['11144477735', '52998224725', '06114423256', '36301136039', '44767962038'];
+        // Create 5 customers with unique and VALID CPFs
+        $cpfs = [
+            '11144477735',  // Valid CPF
+            '52998224725',  // Valid CPF
+            '82178537464',  // Valid CPF
+            '72186361581',  // Valid CPF
+            '29676067713'   // Valid CPF
+        ];
         $names = ['Customer One', 'Customer Two', 'Customer Three', 'Customer Four', 'Customer Five'];
         
         for ($i = 0; $i < 5; $i++) {
