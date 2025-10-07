@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\MetricsController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +26,9 @@ Route::get('/health', function () {
         'timestamp' => now()->toIso8601String(),
     ]);
 });
+
+// Metrics endpoint for Prometheus
+Route::get('/metrics', [MetricsController::class, 'index']);
 
 // Authentication routes (public)
 Route::prefix('auth')->group(function () {

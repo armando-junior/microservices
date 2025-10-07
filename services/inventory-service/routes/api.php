@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\MetricsController;
 use App\Http\Controllers\StockController;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +22,9 @@ Route::get('/health', function () {
         'timestamp' => now()->toIso8601String(),
     ]);
 });
+
+// Metrics endpoint for Prometheus
+Route::get('/metrics', [MetricsController::class, 'index']);
 
 // API v1 routes
 Route::prefix('v1')->group(function () {
