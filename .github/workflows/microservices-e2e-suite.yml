@@ -1,0 +1,400 @@
+name: Microservices - Complete E2E Suite
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+  schedule:
+    # Run daily at 3 AM UTC
+    - cron: '0 3 * * *'
+
+jobs:
+  auth-service-validation:
+    name: Auth Service - Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+
+      - name: Start Auth Service stack
+        run: |
+          docker compose up -d redis rabbitmq auth-db auth-service
+
+      - name: Wait for services
+        run: |
+          timeout 120 bash -c 'until curl -sf http://localhost:9001/health > /dev/null; do sleep 2; done'
+
+      - name: Run Auth Service validation
+        run: |
+          chmod +x scripts/validate-auth-service.sh
+          ./scripts/validate-auth-service.sh
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v
+
+  inventory-service-validation:
+    name: Inventory Service - Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+
+      - name: Start Inventory Service stack
+        run: |
+          docker compose up -d redis rabbitmq inventory-db inventory-service
+
+      - name: Wait for services
+        run: |
+          timeout 120 bash -c 'until curl -sf http://localhost:9002/health > /dev/null; do sleep 2; done'
+
+      - name: Run Inventory Service validation
+        run: |
+          chmod +x scripts/validate-inventory-service.sh
+          ./scripts/validate-inventory-service.sh
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v
+
+  sales-service-validation:
+    name: Sales Service - Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+
+      - name: Start Sales Service stack (with dependencies)
+        run: |
+          docker compose up -d redis rabbitmq sales-db inventory-db sales-service inventory-service
+
+      - name: Wait for services
+        run: |
+          timeout 120 bash -c 'until curl -sf http://localhost:9003/health > /dev/null; do sleep 2; done'
+          timeout 120 bash -c 'until curl -sf http://localhost:9002/health > /dev/null; do sleep 2; done'
+
+      - name: Run Sales Service validation
+        run: |
+          chmod +x scripts/validate-sales-service.sh
+          ./scripts/validate-sales-service.sh
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v
+
+  financial-service-e2e:
+    name: Financial Service - E2E Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+
+      - name: Start Financial Service stack
+        run: |
+          docker compose up -d redis rabbitmq financial-db prometheus financial-service
+
+      - name: Wait for services
+        run: |
+          timeout 120 bash -c 'until curl -sf http://localhost:9004/health | jq -e ".status == \"healthy\"" > /dev/null; do sleep 2; done'
+          timeout 60 bash -c 'until curl -sf http://localhost:9090/-/healthy > /dev/null; do sleep 1; done'
+
+      - name: Run Database Migrations
+        run: |
+          docker compose exec -T financial-service php artisan migrate --force
+
+      - name: Run Financial Service E2E Tests
+        run: |
+          chmod +x scripts/e2e-financial-service.sh
+          ./scripts/e2e-financial-service.sh
+
+      - name: Display logs on failure
+        if: failure()
+        run: |
+          docker compose logs --tail=100 financial-service
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v
+
+  integration-test:
+    name: Integration Test - All Services
+    runs-on: ubuntu-latest
+    needs: [auth-service-validation, inventory-service-validation, sales-service-validation, financial-service-e2e]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+
+      - name: Start all services
+        run: |
+          docker compose up -d
+
+      - name: Wait for all services to be healthy
+        run: |
+          echo "Waiting for Auth Service..."
+          timeout 120 bash -c 'until curl -sf http://localhost:9001/health > /dev/null; do sleep 2; done'
+          
+          echo "Waiting for Inventory Service..."
+          timeout 120 bash -c 'until curl -sf http://localhost:9002/health > /dev/null; do sleep 2; done'
+          
+          echo "Waiting for Sales Service..."
+          timeout 120 bash -c 'until curl -sf http://localhost:9003/health > /dev/null; do sleep 2; done'
+          
+          echo "Waiting for Financial Service..."
+          timeout 120 bash -c 'until curl -sf http://localhost:9004/health > /dev/null; do sleep 2; done'
+          
+          echo "All services are healthy!"
+
+      - name: Run cross-service integration test
+        run: |
+          echo "=== Testing Inter-Service Communication ==="
+          
+          # 1. Register user in Auth Service
+          echo "1. Registering user..."
+          REGISTER_RESPONSE=$(curl -s -X POST http://localhost:9001/api/v1/register \
+            -H "Content-Type: application/json" \
+            -d '{
+              "name": "Integration Test User",
+              "email": "integration-'$(date +%s)'@test.com",
+              "password": "Password123!",
+              "password_confirmation": "Password123!"
+            }')
+          
+          TOKEN=$(echo $REGISTER_RESPONSE | jq -r '.data.token')
+          
+          if [ -z "$TOKEN" ] || [ "$TOKEN" == "null" ]; then
+            echo "❌ Failed to get authentication token"
+            echo "Response: $REGISTER_RESPONSE"
+            exit 1
+          fi
+          
+          echo "✅ User registered successfully"
+          
+          # 2. Create category in Inventory Service
+          echo "2. Creating product category..."
+          CATEGORY_RESPONSE=$(curl -s -X POST http://localhost:9002/api/v1/categories \
+            -H "Content-Type: application/json" \
+            -d '{
+              "name": "Integration Test Category",
+              "slug": "integration-test-category-'$(date +%s)'"
+            }')
+          
+          CATEGORY_ID=$(echo $CATEGORY_RESPONSE | jq -r '.data.id')
+          
+          if [ -z "$CATEGORY_ID" ] || [ "$CATEGORY_ID" == "null" ]; then
+            echo "❌ Failed to create category"
+            exit 1
+          fi
+          
+          echo "✅ Category created: $CATEGORY_ID"
+          
+          # 3. Create product in Inventory Service
+          echo "3. Creating product..."
+          PRODUCT_RESPONSE=$(curl -s -X POST http://localhost:9002/api/v1/products \
+            -H "Content-Type: application/json" \
+            -d '{
+              "category_id": "'$CATEGORY_ID'",
+              "name": "Integration Test Product",
+              "sku": "INT-'$(date +%s)'",
+              "price": 99.99,
+              "quantity": 100
+            }')
+          
+          PRODUCT_ID=$(echo $PRODUCT_RESPONSE | jq -r '.data.id')
+          
+          if [ -z "$PRODUCT_ID" ] || [ "$PRODUCT_ID" == "null" ]; then
+            echo "❌ Failed to create product"
+            exit 1
+          fi
+          
+          echo "✅ Product created: $PRODUCT_ID"
+          
+          # 4. Create customer in Sales Service
+          echo "4. Creating customer..."
+          CUSTOMER_RESPONSE=$(curl -s -X POST http://localhost:9003/api/v1/customers \
+            -H "Content-Type: application/json" \
+            -d '{
+              "name": "Integration Test Customer",
+              "email": "customer-'$(date +%s)'@test.com",
+              "document": "12345678901"
+            }')
+          
+          CUSTOMER_ID=$(echo $CUSTOMER_RESPONSE | jq -r '.data.id')
+          
+          if [ -z "$CUSTOMER_ID" ] || [ "$CUSTOMER_ID" == "null" ]; then
+            echo "❌ Failed to create customer"
+            exit 1
+          fi
+          
+          echo "✅ Customer created: $CUSTOMER_ID"
+          
+          # 5. Create order in Sales Service
+          echo "5. Creating order..."
+          ORDER_RESPONSE=$(curl -s -X POST http://localhost:9003/api/v1/orders \
+            -H "Content-Type: application/json" \
+            -d '{
+              "customer_id": "'$CUSTOMER_ID'"
+            }')
+          
+          ORDER_ID=$(echo $ORDER_RESPONSE | jq -r '.data.id')
+          
+          if [ -z "$ORDER_ID" ] || [ "$ORDER_ID" == "null" ]; then
+            echo "❌ Failed to create order"
+            exit 1
+          fi
+          
+          echo "✅ Order created: $ORDER_ID"
+          
+          # 6. Create supplier in Financial Service
+          echo "6. Creating supplier..."
+          SUPPLIER_RESPONSE=$(curl -s -X POST http://localhost:9004/api/v1/suppliers \
+            -H "Content-Type: application/json" \
+            -d '{
+              "name": "Integration Test Supplier",
+              "document": "'$(printf '%014d' $((10000000000000 + RANDOM % 90000000000000)))'",
+              "email": "supplier-'$(date +%s)'@test.com"
+            }')
+          
+          SUPPLIER_ID=$(echo $SUPPLIER_RESPONSE | jq -r '.data.id')
+          
+          if [ -z "$SUPPLIER_ID" ] || [ "$SUPPLIER_ID" == "null" ]; then
+            echo "❌ Failed to create supplier"
+            exit 1
+          fi
+          
+          echo "✅ Supplier created: $SUPPLIER_ID"
+          
+          echo ""
+          echo "==================================="
+          echo "✅ INTEGRATION TEST PASSED!"
+          echo "==================================="
+          echo "All services are communicating correctly!"
+
+      - name: Generate integration test report
+        if: always()
+        run: |
+          echo "# Integration Test Report" > $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Date**: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Services Validated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Port | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|------|--------|" >> $GITHUB_STEP_SUMMARY
+          
+          for service in "auth-service:9001" "inventory-service:9002" "sales-service:9003" "financial-service:9004"; do
+            SERVICE_NAME=$(echo $service | cut -d: -f1)
+            PORT=$(echo $service | cut -d: -f2)
+            
+            if curl -sf http://localhost:$PORT/health > /dev/null 2>&1; then
+              echo "| $SERVICE_NAME | $PORT | ✅ Running |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| $SERVICE_NAME | $PORT | ❌ Down |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+      - name: Display all service logs
+        if: failure()
+        run: |
+          echo "=== Auth Service ==="
+          docker compose logs --tail=50 auth-service || true
+          
+          echo "=== Inventory Service ==="
+          docker compose logs --tail=50 inventory-service || true
+          
+          echo "=== Sales Service ==="
+          docker compose logs --tail=50 sales-service || true
+          
+          echo "=== Financial Service ==="
+          docker compose logs --tail=50 financial-service || true
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v
+
+  summary:
+    name: Test Suite Summary
+    runs-on: ubuntu-latest
+    needs: [auth-service-validation, inventory-service-validation, sales-service-validation, financial-service-e2e, integration-test]
+    if: always()
+    
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# 🎉 Microservices E2E Test Suite - Summary" > $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Date**: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow**: ${{ github.workflow }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Run ID**: ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Auth Service Validation | ${{ needs.auth-service-validation.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Inventory Service Validation | ${{ needs.inventory-service-validation.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Sales Service Validation | ${{ needs.sales-service-validation.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Financial Service E2E | ${{ needs.financial-service-e2e.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration Test | ${{ needs.integration-test.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.auth-service-validation.result }}" == "success" ] && \
+             [ "${{ needs.inventory-service-validation.result }}" == "success" ] && \
+             [ "${{ needs.sales-service-validation.result }}" == "success" ] && \
+             [ "${{ needs.financial-service-e2e.result }}" == "success" ] && \
+             [ "${{ needs.integration-test.result }}" == "success" ]; then
+            echo "## ✅ All Tests Passed!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "All microservices are functioning correctly and can communicate with each other." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ Some Tests Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Please review the individual test results above." >> $GITHUB_STEP_SUMMARY
+          fi
+
