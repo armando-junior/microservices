@@ -43,8 +43,8 @@ services:
     container_name: gateway-db
     environment:
       POSTGRES_DB: kong
-      POSTGRES_USER: kong
-      POSTGRES_PASSWORD: kong
+      POSTGRES_USER: kong_user
+      POSTGRES_PASSWORD: kong_pass123
     volumes:
       - gateway-db-data:/var/lib/postgresql/data
     networks:
@@ -138,7 +138,7 @@ services:
   redis:
     image: redis:7.2-alpine
     container_name: redis
-    command: redis-server --appendonly yes --requirepass redis_password
+    command: redis-server --appendonly yes --requirepass redis_pass123
     ports:
       - "6379:6379"
     volumes:
@@ -161,7 +161,7 @@ services:
     environment:
       POSTGRES_DB: auth_db
       POSTGRES_USER: auth_user
-      POSTGRES_PASSWORD: auth_pass
+      POSTGRES_PASSWORD: auth_pass123
     volumes:
       - auth-db-data:/var/lib/postgresql/data
     networks:
@@ -178,7 +178,7 @@ services:
     environment:
       POSTGRES_DB: inventory_db
       POSTGRES_USER: inventory_user
-      POSTGRES_PASSWORD: inventory_pass
+      POSTGRES_PASSWORD: inventory_pass123
     volumes:
       - inventory-db-data:/var/lib/postgresql/data
     networks:
@@ -195,7 +195,7 @@ services:
     environment:
       POSTGRES_DB: sales_db
       POSTGRES_USER: sales_user
-      POSTGRES_PASSWORD: sales_pass
+      POSTGRES_PASSWORD: sales_pass123
     volumes:
       - sales-db-data:/var/lib/postgresql/data
     networks:
@@ -212,7 +212,7 @@ services:
     environment:
       POSTGRES_DB: logistics_db
       POSTGRES_USER: logistics_user
-      POSTGRES_PASSWORD: logistics_pass
+      POSTGRES_PASSWORD: logistics_pass123
     volumes:
       - logistics-db-data:/var/lib/postgresql/data
     networks:
@@ -229,7 +229,7 @@ services:
     environment:
       POSTGRES_DB: financial_db
       POSTGRES_USER: financial_user
-      POSTGRES_PASSWORD: financial_password
+      POSTGRES_PASSWORD: financial_pass123
     ports:
       - "5436:5432"
     volumes:
@@ -264,11 +264,11 @@ services:
       DB_PORT: 5432
       DB_DATABASE: auth_db
       DB_USERNAME: auth_user
-      DB_PASSWORD: auth_pass
+      DB_PASSWORD: auth_pass123
       
       # Redis
       REDIS_HOST: redis
-      REDIS_PASSWORD: redis_password
+      REDIS_PASSWORD: redis_pass123
       REDIS_PORT: 6379
       CACHE_STORE: redis
       SESSION_DRIVER: file
@@ -329,11 +329,11 @@ services:
       DB_PORT: 5432
       DB_DATABASE: inventory_db
       DB_USERNAME: inventory_user
-      DB_PASSWORD: inventory_pass
+      DB_PASSWORD: inventory_pass123
       
       # Redis
       REDIS_HOST: redis
-      REDIS_PASSWORD: redis_password
+      REDIS_PASSWORD: redis_pass123
       REDIS_PORT: 6379
       CACHE_STORE: redis
       SESSION_DRIVER: file
@@ -388,11 +388,11 @@ services:
       DB_PORT: 5432
       DB_DATABASE: sales_db
       DB_USERNAME: sales_user
-      DB_PASSWORD: sales_pass
+      DB_PASSWORD: sales_pass123
       
       # Redis
       REDIS_HOST: redis
-      REDIS_PASSWORD: redis_password
+      REDIS_PASSWORD: redis_pass123
       REDIS_PORT: 6379
       CACHE_STORE: redis
       SESSION_DRIVER: file
@@ -457,11 +457,11 @@ services:
       DB_PORT: 5432
       DB_DATABASE: financial_db
       DB_USERNAME: financial_user
-      DB_PASSWORD: financial_password
+      DB_PASSWORD: financial_pass123
       
       # Redis
       REDIS_HOST: redis
-      REDIS_PASSWORD: redis_password
+      REDIS_PASSWORD: redis_pass123
       REDIS_PORT: 6379
       REDIS_DB: 3
       CACHE_STORE: redis
