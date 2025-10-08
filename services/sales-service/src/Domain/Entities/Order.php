@@ -15,7 +15,7 @@ use Src\Domain\ValueObjects\OrderItemId;
 
 /**
  * Order Entity (Aggregate Root)
- * 
+ *
  * Representa um pedido de venda completo.
  */
 final class Order
@@ -45,7 +45,7 @@ final class Order
     }
 
     /**
-     * Cria um novo pedido (draft)
+     * Cria um pedido (draft)
      */
     public static function create(
         OrderId $id,
@@ -255,7 +255,7 @@ final class Order
         // Registra data de entrega
         if ($newStatus->isDelivered()) {
             $this->deliveredAt = new DateTimeImmutable();
-            
+
             $this->recordEvent('OrderDelivered', [
                 'order_id' => $this->id->value(),
                 'order_number' => $this->orderNumber->value(),
@@ -275,7 +275,7 @@ final class Order
     public function updatePaymentStatus(PaymentStatus $newStatus, ?string $paymentMethod = null): void
     {
         $this->paymentStatus = $newStatus;
-        
+
         if ($paymentMethod !== null) {
             $this->paymentMethod = $paymentMethod;
         }
