@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Psr\Log\LoggerInterface;
+use Src\Application\Contracts\EventPublisherInterface;
 use Src\Domain\Repositories\CustomerRepositoryInterface;
 use Src\Domain\Repositories\OrderRepositoryInterface;
 use Src\Infrastructure\Persistence\EloquentCustomerRepository;
@@ -35,13 +37,17 @@ class DomainServiceProvider extends ServiceProvider
             EloquentOrderRepository::class
         );
 
-        // Event Publisher (RabbitMQ)
-        $this->app->singleton(
-            RabbitMQEventPublisher::class,
-            function ($app) {
-                return new RabbitMQEventPublisher();
-            }
-        );
+        // Event Publisher binding
+        $this->app->singleton(EventPublisherInterface::class, function ($app) {
+            return new RabbitMQEventPublisher(
+                host: config('rabbitmq.host'),
+                port: (int) config('rabbitmq.port'),
+                user: config('rabbitmq.user'),
+                password: config('rabbitmq.password'),
+                vhost: config('rabbitmq.vhost'),
+                logger: $app->make(LoggerInterface::class)
+            );
+        });
     }
 
     /**

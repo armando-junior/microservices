@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Src\Application\UseCases\Product\CreateProduct;
 
+use Src\Application\Contracts\EventPublisherInterface;
 use Src\Application\DTOs\ProductDTO;
 use Src\Application\Exceptions\SKUAlreadyExistsException;
 use Src\Domain\Entities\Product;
 use Src\Domain\Entities\Stock;
+use Src\Domain\Events\ProductCreated;
 use Src\Domain\Repositories\ProductRepositoryInterface;
 use Src\Domain\Repositories\StockRepositoryInterface;
 use Src\Domain\ValueObjects\ProductId;
@@ -22,13 +24,14 @@ use Src\Domain\ValueObjects\Quantity;
  * Create Product Use Case
  * 
  * Caso de uso para criar um novo produto.
- * Também cria automaticamente o estoque inicial (zerado).
+ * Também cria automaticamente o estoque inicial (zerado) e publica evento ProductCreated.
  */
 final class CreateProductUseCase
 {
     public function __construct(
         private readonly ProductRepositoryInterface $productRepository,
-        private readonly StockRepositoryInterface $stockRepository
+        private readonly StockRepositoryInterface $stockRepository,
+        private readonly EventPublisherInterface $eventPublisher
     ) {
     }
 
@@ -75,9 +78,17 @@ final class CreateProductUseCase
         // 6. Persistir estoque
         $this->stockRepository->save($stock);
 
-        // 7. Publicar eventos de domínio (será feito no repository)
-        // $events = $product->pullDomainEvents();
-        // $this->eventPublisher->publishAll($events);
+        // 7. Publicar evento ProductCreated
+        $event = new ProductCreated(
+            productId: $productId->value(),
+            name: $name->value(),
+            sku: $sku->value(),
+            price: $price->value(),
+            categoryId: $categoryId?->value() ?? '',
+            initialStock: 0 // Stock inicial é sempre 0
+        );
+        
+        $this->eventPublisher->publish($event);
 
         // 8. Retornar DTO
         return ProductDTO::fromEntity($product);

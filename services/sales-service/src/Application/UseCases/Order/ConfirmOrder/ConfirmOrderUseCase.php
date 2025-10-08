@@ -4,23 +4,24 @@ declare(strict_types=1);
 
 namespace Src\Application\UseCases\Order\ConfirmOrder;
 
+use Src\Application\Contracts\EventPublisherInterface;
 use Src\Application\DTOs\OrderDTO;
 use Src\Application\Exceptions\OrderNotFoundException;
+use Src\Domain\Events\OrderConfirmed;
 use Src\Domain\Repositories\OrderRepositoryInterface;
 use Src\Domain\ValueObjects\OrderId;
-use Src\Infrastructure\Messaging\RabbitMQEventPublisher;
 
 /**
  * Confirm Order Use Case
  * 
- * Confirma um pedido, mudando seu status de 'draft' para 'pending'.
- * Publica evento via RabbitMQ para reservar estoque no Inventory Service.
+ * Confirma um pedido, mudando seu status de 'draft' para 'confirmed'.
+ * Publica evento OrderConfirmed via RabbitMQ.
  */
 final class ConfirmOrderUseCase
 {
     public function __construct(
         private readonly OrderRepositoryInterface $orderRepository,
-        private readonly RabbitMQEventPublisher $eventPublisher
+        private readonly EventPublisherInterface $eventPublisher
     ) {
     }
 
@@ -43,9 +44,15 @@ final class ConfirmOrderUseCase
         // 3. Persistir
         $this->orderRepository->save($order);
 
-        // 4. Publicar evento no RabbitMQ
-        $domainEvents = $order->pullDomainEvents();
-        $this->eventPublisher->publishAll($domainEvents);
+        // 4. Publicar evento OrderConfirmed
+        $event = new OrderConfirmed(
+            orderId: $order->getId()->value(),
+            customerId: $order->getCustomerId()->value(),
+            totalAmount: $order->getTotalAmount()->value(),
+            itemCount: count($order->getItems())
+        );
+        
+        $this->eventPublisher->publish($event);
 
         // 5. Retornar DTO
         return OrderDTO::fromEntity($order);

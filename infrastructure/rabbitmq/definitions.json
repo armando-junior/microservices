@@ -201,6 +201,14 @@
       "arguments": {}
     },
     {
+      "source": "inventory.events",
+      "vhost": "/",
+      "destination": "sales.queue",
+      "destination_type": "queue",
+      "routing_key": "inventory.product.*",
+      "arguments": {}
+    },
+    {
       "source": "financial.events",
       "vhost": "/",
       "destination": "sales.queue",

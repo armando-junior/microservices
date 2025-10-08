@@ -9,35 +9,33 @@ use DateTimeImmutable;
 /**
  * Base Domain Event
  * 
- * Classe base para todos os eventos de domínio.
+ * Todos os eventos de domínio devem implementar esta interface.
  */
-abstract class DomainEvent
+interface DomainEvent
 {
-    public function __construct(
-        private readonly array $payload,
-        private readonly DateTimeImmutable $occurredAt = new DateTimeImmutable()
-    ) {
-    }
+    /**
+     * Nome do evento
+     */
+    public function eventName(): string;
 
-    abstract public function eventName(): string;
+    /**
+     * Routing key para RabbitMQ
+     */
+    public function routingKey(): string;
 
-    public function payload(): array
-    {
-        return $this->payload;
-    }
+    /**
+     * Data/hora que o evento ocorreu
+     */
+    public function occurredOn(): DateTimeImmutable;
 
-    public function occurredAt(): DateTimeImmutable
-    {
-        return $this->occurredAt;
-    }
+    /**
+     * Converte o evento para array (para serialização)
+     */
+    public function toArray(): array;
 
-    public function toArray(): array
-    {
-        return [
-            'event' => $this->eventName(),
-            'payload' => $this->payload(),
-            'occurred_at' => $this->occurredAt()->format('Y-m-d\TH:i:s.u\Z'),
-        ];
-    }
+    /**
+     * Converte o evento para JSON
+     */
+    public function toJson(): string;
 }
 

@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Psr\Log\LoggerInterface;
+use Src\Application\Contracts\EventPublisherInterface;
 use Src\Domain\Repositories\ProductRepositoryInterface;
 use Src\Domain\Repositories\CategoryRepositoryInterface;
 use Src\Domain\Repositories\StockRepositoryInterface;
+use Src\Infrastructure\Messaging\RabbitMQ\RabbitMQEventPublisher;
 use Src\Infrastructure\Persistence\EloquentProductRepository;
 use Src\Infrastructure\Persistence\EloquentCategoryRepository;
 use Src\Infrastructure\Persistence\EloquentStockRepository;
@@ -40,6 +43,18 @@ class DomainServiceProvider extends ServiceProvider
             StockRepositoryInterface::class,
             EloquentStockRepository::class
         );
+
+        // Event Publisher binding
+        $this->app->singleton(EventPublisherInterface::class, function ($app) {
+            return new RabbitMQEventPublisher(
+                host: config('rabbitmq.host'),
+                port: (int) config('rabbitmq.port'),
+                user: config('rabbitmq.user'),
+                password: config('rabbitmq.password'),
+                vhost: config('rabbitmq.vhost'),
+                logger: $app->make(LoggerInterface::class)
+            );
+        });
     }
 
     /**

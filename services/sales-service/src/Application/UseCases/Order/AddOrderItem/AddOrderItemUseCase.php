@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Src\Application\UseCases\Order\AddOrderItem;
 
+use Src\Application\Contracts\EventPublisherInterface;
 use Src\Application\DTOs\OrderDTO;
 use Src\Application\Exceptions\OrderNotFoundException;
 use Src\Application\Exceptions\ProductNotFoundException;
+use Src\Domain\Events\OrderItemAdded;
 use Src\Domain\Repositories\OrderRepositoryInterface;
 use Src\Domain\ValueObjects\Money;
 use Src\Domain\ValueObjects\OrderId;
@@ -19,12 +21,13 @@ use Illuminate\Support\Facades\Http;
  * Add Order Item Use Case
  * 
  * Adiciona um item ao pedido, buscando informações do produto
- * no Inventory Service.
+ * no Inventory Service, e publica evento OrderItemAdded.
  */
 final class AddOrderItemUseCase
 {
     public function __construct(
-        private readonly OrderRepositoryInterface $orderRepository
+        private readonly OrderRepositoryInterface $orderRepository,
+        private readonly EventPublisherInterface $eventPublisher
     ) {
     }
 
@@ -61,7 +64,18 @@ final class AddOrderItemUseCase
         // 5. Persistir pedido
         $this->orderRepository->save($order);
 
-        // 6. Retornar DTO
+        // 6. Publicar evento OrderItemAdded
+        $event = new OrderItemAdded(
+            orderId: $orderId->value(),
+            itemId: $orderItem->getId()->value(),
+            productId: $dto->productId,
+            quantity: $dto->quantity,
+            unitPrice: $productData['price']
+        );
+        
+        $this->eventPublisher->publish($event);
+
+        // 7. Retornar DTO
         return OrderDTO::fromEntity($order);
     }
 

@@ -4,117 +4,133 @@ declare(strict_types=1);
 
 namespace Src\Infrastructure\Messaging;
 
+use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
-use Illuminate\Support\Facades\Log;
+use Src\Application\Contracts\EventPublisherInterface;
+use Src\Domain\Events\DomainEvent;
+use Psr\Log\LoggerInterface;
 
 /**
  * RabbitMQ Event Publisher
  * 
- * Publica eventos de domínio no RabbitMQ.
- * 
- * Note: Class is not final to allow mocking in tests
+ * Implementação do EventPublisher usando RabbitMQ para o Sales Service.
  */
-class RabbitMQEventPublisher
+final class RabbitMQEventPublisher implements EventPublisherInterface
 {
-    private ?AMQPStreamConnection $connection = null;
-    private $channel = null;
+    private AMQPStreamConnection $connection;
+    private AMQPChannel $channel;
 
-    public function __construct()
-    {
+    public function __construct(
+        private readonly string $host,
+        private readonly int $port,
+        private readonly string $user,
+        private readonly string $password,
+        private readonly string $vhost,
+        private readonly LoggerInterface $logger
+    ) {
         $this->connect();
     }
 
+    /**
+     * Conecta ao RabbitMQ
+     */
     private function connect(): void
     {
         try {
             $this->connection = new AMQPStreamConnection(
-                config('rabbitmq.host', 'rabbitmq'),
-                config('rabbitmq.port', 5672),
-                config('rabbitmq.user', 'admin'),
-                config('rabbitmq.password', 'admin123'),
-                config('rabbitmq.vhost', '/')
+                $this->host,
+                $this->port,
+                $this->user,
+                $this->password,
+                $this->vhost
             );
-            
+
             $this->channel = $this->connection->channel();
-            
-            // Declarar exchange
-            $this->channel->exchange_declare(
-                'sales_events',
-                'topic',
-                false,
-                true,  // durable
-                false
-            );
-            
-            Log::info('RabbitMQ connection established successfully');
+
+            $this->logger->info('Sales Service connected to RabbitMQ', [
+                'host' => $this->host,
+                'port' => $this->port,
+                'vhost' => $this->vhost,
+            ]);
         } catch (\Exception $e) {
-            Log::error('Failed to connect to RabbitMQ: ' . $e->getMessage());
+            $this->logger->error('Sales Service failed to connect to RabbitMQ', [
+                'error' => $e->getMessage(),
+            ]);
             throw $e;
         }
     }
 
-    /**
-     * Publica um evento no RabbitMQ
-     */
-    public function publish(string $eventName, array $payload): void
+    public function publish(DomainEvent $event): void
     {
         try {
             $message = new AMQPMessage(
-                json_encode([
-                    'event' => $eventName,
-                    'payload' => $payload,
-                    'timestamp' => now()->toIso8601String(),
-                    'service' => 'sales-service',
-                ]),
-                ['delivery_mode' => 2] // 2 = persistent delivery mode
+                $event->toJson(),
+                [
+                    'content_type' => 'application/json',
+                    'delivery_mode' => 2, // 2 = persistent
+                    'timestamp' => $event->occurredOn()->getTimestamp(),
+                ]
             );
 
-            $routingKey = 'sales.' . strtolower($eventName);
-            
+            // Determina o exchange baseado no tipo de evento
+            $exchange = $this->getExchangeForEvent($event);
+
             $this->channel->basic_publish(
                 $message,
-                'sales_events',
-                $routingKey
+                $exchange,
+                $event->routingKey()
             );
 
-            Log::info("Event published to RabbitMQ: {$eventName}", [
-                'routing_key' => $routingKey,
-                'payload' => $payload,
+            $this->logger->info('Sales Service event published to RabbitMQ', [
+                'event' => $event->eventName(),
+                'exchange' => $exchange,
+                'routing_key' => $event->routingKey(),
             ]);
         } catch (\Exception $e) {
-            Log::error("Failed to publish event to RabbitMQ: {$eventName}", [
+            $this->logger->error('Sales Service failed to publish event to RabbitMQ', [
+                'event' => $event->eventName(),
                 'error' => $e->getMessage(),
-                'payload' => $payload,
             ]);
             throw $e;
         }
     }
 
-    /**
-     * Publica múltiplos eventos de domínio
-     */
-    public function publishAll(array $events): void
+    public function publishBatch(array $events): void
     {
         foreach ($events as $event) {
-            $this->publish(
-                $event['event'],
-                $event['payload']
-            );
+            $this->publish($event);
         }
     }
 
+    /**
+     * Determina o exchange apropriado para o evento
+     */
+    private function getExchangeForEvent(DomainEvent $event): string
+    {
+        // Extrai o prefixo do nome do evento (ex: "sales" de "sales.order.created")
+        $parts = explode('.', $event->eventName());
+        $service = $parts[0] ?? 'sales';
+
+        return "{$service}.events";
+    }
+
+    /**
+     * Fecha a conexão com RabbitMQ
+     */
     public function __destruct()
     {
+        // Silently close connections - errors during destruction are ignored
         try {
-            if ($this->channel) {
-                $this->channel->close();
-            }
-            if ($this->connection) {
-                $this->connection->close();
-            }
-        } catch (\Exception $e) {
-            Log::warning('Error closing RabbitMQ connection: ' . $e->getMessage());
+            @$this->channel?->close();
+        } catch (\Throwable $e) {
+            // Ignore
+        }
+
+        try {
+            @$this->connection?->close();
+        } catch (\Throwable $e) {
+            // Ignore
         }
     }
 }

@@ -4,22 +4,23 @@ declare(strict_types=1);
 
 namespace Src\Application\UseCases\Order\CancelOrder;
 
+use Src\Application\Contracts\EventPublisherInterface;
 use Src\Application\DTOs\OrderDTO;
 use Src\Application\Exceptions\OrderNotFoundException;
+use Src\Domain\Events\OrderCancelled;
 use Src\Domain\Repositories\OrderRepositoryInterface;
 use Src\Domain\ValueObjects\OrderId;
-use Src\Infrastructure\Messaging\RabbitMQEventPublisher;
 
 /**
  * Cancel Order Use Case
  * 
- * Cancela um pedido e libera estoque (via RabbitMQ).
+ * Cancela um pedido e publica evento OrderCancelled.
  */
 final class CancelOrderUseCase
 {
     public function __construct(
         private readonly OrderRepositoryInterface $orderRepository,
-        private readonly RabbitMQEventPublisher $eventPublisher
+        private readonly EventPublisherInterface $eventPublisher
     ) {
     }
 
@@ -43,9 +44,14 @@ final class CancelOrderUseCase
         // 3. Persistir
         $this->orderRepository->save($order);
 
-        // 4. Publicar evento para liberar estoque no RabbitMQ
-        $domainEvents = $order->pullDomainEvents();
-        $this->eventPublisher->publishAll($domainEvents);
+        // 4. Publicar evento OrderCancelled
+        $event = new OrderCancelled(
+            orderId: $order->getId()->value(),
+            customerId: $order->getCustomerId()->value(),
+            reason: $reason
+        );
+        
+        $this->eventPublisher->publish($event);
 
         // 5. Retornar DTO
         return OrderDTO::fromEntity($order);
